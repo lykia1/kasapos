@@ -66,25 +66,52 @@ namespace KasaPos
             }
         }
 
-        /// <summary>Kurulumu indirir, sessiz başlatır ve programı kapatır.</summary>
+        /// <summary>Kurulumu ilerleme göstererek indirir, sessiz başlatır ve programı kapatır.</summary>
         public static async Task<string> DownloadAndInstallAsync(UpdateInfo info)
         {
+            var win = new UpdateProgressWindow(info.Tag);
+            win.Show();
             try
             {
                 var path = Path.Combine(Path.GetTempPath(), "KasaPOS-Setup-" + info.Tag + ".exe");
                 using (var http = NewClient())
                 {
-                    http.Timeout = TimeSpan.FromMinutes(10);
-                    var bytes = await http.GetByteArrayAsync(info.SetupUrl);
-                    File.WriteAllBytes(path, bytes);
+                    http.Timeout = TimeSpan.FromMinutes(15);
+                    using (var resp = await http.GetAsync(info.SetupUrl, HttpCompletionOption.ResponseHeadersRead))
+                    {
+                        resp.EnsureSuccessStatusCode();
+                        long total = resp.Content.Headers.ContentLength ?? -1;
+                        using (var src = await resp.Content.ReadAsStreamAsync())
+                        using (var dst = File.Create(path))
+                        {
+                            var buf = new byte[81920];
+                            long done = 0;
+                            int n;
+                            var last = DateTime.MinValue;
+                            while ((n = await src.ReadAsync(buf, 0, buf.Length)) > 0)
+                            {
+                                await dst.WriteAsync(buf, 0, n);
+                                done += n;
+                                if ((DateTime.Now - last).TotalMilliseconds > 150)
+                                {
+                                    win.Report(done, total);
+                                    last = DateTime.Now;
+                                }
+                            }
+                            win.Report(done, total);
+                        }
+                    }
                 }
+                win.Installing();
                 Db.Backup(true);
+                await Task.Delay(600);
                 Process.Start(new ProcessStartInfo(path, "/SILENT /SUPPRESSMSGBOXES /CLOSEAPPLICATIONS /NORESTART") { UseShellExecute = true });
                 Application.Current.Shutdown();
                 return null;
             }
             catch (Exception ex)
             {
+                win.Close();
                 return ex.Message;
             }
         }
