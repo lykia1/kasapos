@@ -12,7 +12,12 @@
     <Product>KasaPOS</Product>
     <Company>KasaPOS</Company>
     <SatelliteResourceLanguages>tr</SatelliteResourceLanguages>
+    <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="app.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />

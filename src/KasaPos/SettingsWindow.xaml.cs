@@ -62,6 +62,8 @@ namespace KasaPos
             TxtCidStatus.Text = CallerId.IsRunning ? "Durum: dinleniyor (" + Settings.Get("callerid_port") + ")" : "Durum: kapalı";
 
             TxtDataDir.Text = Db.DataDir;
+            ChkAutoUpdate.IsChecked = Settings.GetBool("update_auto", true);
+            TxtLicense.Text = Licensing.StatusText + "  ·  Makine kodu: " + Licensing.MachineCode;
             TxtVersion.Text = AppInfo.Name + " sürüm " + AppInfo.Version;
         }
 
@@ -129,6 +131,7 @@ namespace KasaPos
                 || Settings.Get("callerid_port") != (CmbCidPort.Text ?? "").Trim()
                 || Settings.GetInt("callerid_baud", 9600) != baud
                 || Settings.Get("callerid_init") != TxtCidInit.Text.Trim();
+            Settings.SetBool("update_auto", ChkAutoUpdate.IsChecked == true);
             Settings.SetBool("callerid_enabled", ChkCid.IsChecked == true);
             Settings.Set("callerid_port", (CmbCidPort.Text ?? "").Trim());
             Settings.Set("callerid_baud", baud.ToString());
@@ -178,6 +181,30 @@ namespace KasaPos
             };
             var err = Printer.Print(CmbReceipt.SelectedItem as string, lines, "Test");
             if (err != null) MessageBox.Show("Yazdırılamadı: " + err, Title);
+        }
+
+        private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var info = await Updater.CheckAsync();
+                if (info == null)
+                {
+                    MessageBox.Show("En güncel sürümü kullanıyorsun (v" + AppInfo.Version + ").", Title);
+                    return;
+                }
+                await Updater.PromptAndInstall(this, info);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Güncelleme kontrol edilemedi: " + ex.Message, Title);
+            }
+        }
+
+        private void License_Click(object sender, RoutedEventArgs e)
+        {
+            new LicenseWindow { Owner = this }.ShowDialog();
+            TxtLicense.Text = Licensing.StatusText + "  ·  Makine kodu: " + Licensing.MachineCode;
         }
 
         private void CidTest_Click(object sender, RoutedEventArgs e)

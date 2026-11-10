@@ -45,6 +45,16 @@ namespace KasaPos
                 }
             }
 
+            if (Licensing.State == LicenseState.Expired)
+            {
+                var lw = new LicenseWindow();
+                if (lw.ShowDialog() != true)
+                {
+                    Shutdown();
+                    return;
+                }
+            }
+
             ShowLoginThenMain();
         }
 

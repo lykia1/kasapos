@@ -9,6 +9,9 @@ permissions:
   contents: write
   issues: write
 
+env:
+  APPVER: 0.6.${{ github.run_number }}
+
 jobs:
   build:
     runs-on: windows-latest
@@ -26,43 +29,37 @@ jobs:
           dotnet publish src/KasaPos/KasaPos.csproj -c Release -r win-x64 --self-contained true \
             -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
             -p:EnableCompressionInSingleFile=true -p:DebugType=none \
-            -p:Version=0.5.${{ github.run_number }} -o out 2>&1 | tee build.log
+            -p:Version=$APPVER -o out 2>&1 | tee build.log
 
-      - name: Paketle
+      - name: Lisans üreticiyi derle
+        shell: bash
+        run: |
+          set -o pipefail
+          dotnet publish tools/LisansUretici/LisansUretici.csproj -c Release -r win-x64 --self-contained true \
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:EnableCompressionInSingleFile=true -p:DebugType=none -o out-tool 2>&1 | tee -a build.log
+
+      - name: Kurulum programını oluştur (Inno Setup)
         shell: pwsh
         run: |
-          Compress-Archive -Path out/KasaPOS.exe -DestinationPath KasaPOS-v0.5.${{ github.run_number }}.zip
+          if (-not (Test-Path "C:\Program Files (x86)\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress | Out-Null }
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer\KasaPOS.iss" 2>&1 | Tee-Object -FilePath iscc.log
+          if ($LASTEXITCODE -ne 0) { Get-Content iscc.log | Add-Content build.log; exit 1 }
+          Compress-Archive -Path out-tool/KasaPOS-LisansUretici.exe -DestinationPath dist/KasaPOS-LisansUretici.zip
 
       - name: Sürüm yayınla
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.5.${{ github.run_number }}
-          name: KasaPOS v0.5.${{ github.run_number }}
+          tag_name: v${{ env.APPVER }}
+          name: KasaPOS v${{ env.APPVER }}
           body: |
-            Otomatik derleme. Kurulum: zip içindeki KasaPOS.exe'yi masaüstüne çıkar ve çalıştır.
+            **Kurulum:** KasaPOS-Setup-${{ env.APPVER }}.exe dosyasını indirip çalıştır. Masaüstüne kısayol ekler; sonraki sürümler program içinden otomatik güncellenir.
+            **Kurulumsuz kullanım:** KasaPOS.exe'yi indirip doğrudan çalıştırabilirsin.
             Windows "bilgisayarınız korundu" uyarısı verirse "Ek bilgi" > "Yine de çalıştır".
           files: |
-            KasaPOS-v0.5.${{ github.run_number }}.zip
+            dist/KasaPOS-Setup-${{ env.APPVER }}.exe
             out/KasaPOS.exe
-
-      - name: Derleme kaydını ci-log dalına yaz
-        if: always()
-        shell: bash
-        run: |
-          mkdir -p /tmp/ci && cd /tmp/ci
-          {
-            echo "run=${{ github.run_number }} status=${{ job.status }} sha=${{ github.sha }}"
-            if [ -f "$GITHUB_WORKSPACE/build.log" ]; then
-              grep -E "error|Error" "$GITHUB_WORKSPACE/build.log" | sed 's#.*src/KasaPos/#src/KasaPos/#' | sort -u | head -150
-              echo '--- tail ---'
-              tail -40 "$GITHUB_WORKSPACE/build.log"
-            fi
-          } > status.txt
-          git init -q
-          git config user.name ci && git config user.email ci@example.com
-          git checkout -q -b ci-log
-          git add status.txt && git commit -qm "run ${{ github.run_number }} ${{ job.status }}"
-          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-log
+            dist/KasaPOS-LisansUretici.zip
 
       - name: Hata kaydı (issue)
         if: failure()
@@ -73,7 +70,7 @@ jobs:
           {
             echo "Derleme #${{ github.run_number }} başarısız."
             echo '```'
-            if [ -f build.log ]; then grep -E "error|Error" build.log | sed 's#.*src/KasaPos/#src/KasaPos/#' | sort -u | head -120; fi
+            if [ -f build.log ]; then grep -E "error|Error" build.log | sed 's#.*src/KasaPos/#src/KasaPos/#' | sort -u | head -120; echo '--- son satırlar ---'; tail -30 build.log; fi
             echo '```'
           } > err.md
           gh issue create --repo "${{ github.repository }}" --title "Derleme hatası #${{ github.run_number }}" --body-file err.md

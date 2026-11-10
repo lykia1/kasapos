@@ -140,7 +140,14 @@
                         <Button Content="Şimdi Yedekle" Click="BackupNow_Click"/>
                         <Button Content="Yedek Klasörünü Aç" Click="OpenBackups_Click"/>
                     </StackPanel>
-                    <TextBlock x:Name="TxtVersion" Foreground="#52606D" Margin="4,20,4,0"/>
+                    <TextBlock Text="Güncelleme ve lisans" FontWeight="SemiBold" FontSize="16" Margin="4,20,4,4"/>
+                    <CheckBox x:Name="ChkAutoUpdate" Content="Açılışta yeni sürümü kontrol et"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Güncellemeleri Denetle" Click="CheckUpdate_Click"/>
+                        <Button Content="Lisans..." Click="License_Click"/>
+                    </StackPanel>
+                    <TextBlock x:Name="TxtLicense" Foreground="{StaticResource TextSub}" Margin="4,6,4,0"/>
+                    <TextBlock x:Name="TxtVersion" Foreground="{StaticResource TextSub}" Margin="4,6,4,0"/>
                 </StackPanel>
             </TabItem>
         </TabControl>

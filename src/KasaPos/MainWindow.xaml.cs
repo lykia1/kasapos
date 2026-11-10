@@ -30,6 +30,7 @@ namespace KasaPos
             NewOrder(OrderTypes.GelAl);
             RefreshOpenOrders();
             ShowHome();
+            Loaded += (s, e) => Updater.CheckOnStartup(this);
             CallerId.Call += OnIncomingCall;
             var cidErr = CallerId.Start();
             if (cidErr != null) Loaded += (s, e) => MessageBox.Show(cidErr, AppInfo.Name);
@@ -66,6 +67,25 @@ namespace KasaPos
             var day = DateTime.ParseExact(Settings.BusinessDay(DateTime.Now), "yyyy-MM-dd", null);
             TxtDay.Text = "İş günü: " + day.ToString("d MMMM dddd", Money.Tr);
             TxtClock.Text = DateTime.Now.ToString("HH:mm");
+            var ls = Licensing.State;
+            BtnLicense.Visibility = ls == LicenseState.Licensed ? Visibility.Collapsed : Visibility.Visible;
+            BtnLicense.Content = ls == LicenseState.Trial ? "Deneme: " + Licensing.TrialDaysLeft + " gün kaldı" : "Lisans gerekli";
+        }
+
+        private void BtnLicense_Click(object sender, RoutedEventArgs e)
+        {
+            new LicenseWindow { Owner = this }.ShowDialog();
+            UpdateHeader();
+        }
+
+        /// <summary>Deneme süresi bittiyse satış yapılmasın.</summary>
+        private bool LicenseOk()
+        {
+            if (Licensing.State != LicenseState.Expired) return true;
+            MessageBox.Show("Deneme süresi doldu. Satışa devam etmek için lisans anahtarını gir.", Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+            new LicenseWindow { Owner = this }.ShowDialog();
+            UpdateHeader();
+            return Licensing.State != LicenseState.Expired;
         }
 
         // ================= Menü / ürünler =================
@@ -552,6 +572,7 @@ namespace KasaPos
 
         private bool CollectAndValidate()
         {
+            if (!LicenseOk()) return false;
             if (!_order.Items.Any(i => i.Qty > 0))
             {
                 MessageBox.Show("Sepet boş.", Title);

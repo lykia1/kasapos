@@ -1,0 +1,24 @@
+<Window x:Class="KasaPos.LicenseWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Lisans" Width="620" SizeToContent="Height" WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize" FontFamily="Segoe UI" Background="{StaticResource PanelBg}">
+    <StackPanel Margin="18">
+        <TextBlock Text="Lisans" Style="{StaticResource H1}"/>
+        <Border Style="{StaticResource Card}" Margin="3,0,3,10">
+            <TextBlock x:Name="TxtStatus" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"/>
+        </Border>
+        <TextBlock Text="Bu bilgisayarın kodu (lisans almak için satıcına gönder)" Style="{StaticResource Label}"/>
+        <DockPanel>
+            <Button DockPanel.Dock="Right" Content="Kopyala" Click="Copy_Click"/>
+            <TextBox x:Name="TxtMachine" IsReadOnly="True" FontSize="22" FontFamily="Consolas" FontWeight="Bold"/>
+        </DockPanel>
+        <TextBlock Text="Lisans anahtarı" Style="{StaticResource Label}"/>
+        <TextBox x:Name="TxtKey" Height="90" TextWrapping="Wrap" AcceptsReturn="True" FontFamily="Consolas" FontSize="12" VerticalContentAlignment="Top"/>
+        <TextBlock x:Name="TxtError" Foreground="{StaticResource Danger}" TextWrapping="Wrap" Margin="4,4"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button x:Name="BtnClose" Content="Kapat" Width="130" Click="Close_Click"/>
+            <Button Content="Etkinleştir" Width="160" Style="{StaticResource AccentButton}" Click="Activate_Click"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

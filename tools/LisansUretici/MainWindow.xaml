@@ -1,0 +1,31 @@
+<Window x:Class="LisansUretici.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="KasaPOS Lisans Üretici" Width="640" SizeToContent="Height" WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI" FontSize="14" ResizeMode="NoResize">
+    <StackPanel Margin="18">
+        <TextBlock Text="KasaPOS Lisans Üretici" FontSize="22" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBlock Text="Bu programı ve özel anahtar dosyasını kimseyle paylaşma." Foreground="#C92A2A" Margin="0,0,0,12"/>
+
+        <TextBlock Text="Özel anahtar dosyası (kasapos-ozel-anahtar.pem)" Foreground="#555"/>
+        <DockPanel Margin="0,2,0,8">
+            <Button DockPanel.Dock="Right" Content="Seç..." Width="90" Margin="6,0,0,0" Click="Browse_Click"/>
+            <TextBox x:Name="TxtKeyPath" Padding="4"/>
+        </DockPanel>
+
+        <TextBlock Text="Müşterinin makine kodu (ör. 1A2B-3C4D-5E6F). Her bilgisayarda çalışsın istersen * yaz." Foreground="#555" TextWrapping="Wrap"/>
+        <TextBox x:Name="TxtMachine" Padding="4" FontFamily="Consolas" FontSize="18" Margin="0,2,0,8"/>
+
+        <TextBlock Text="İşletme adı" Foreground="#555"/>
+        <TextBox x:Name="TxtName" Padding="4" Margin="0,2,0,8"/>
+
+        <TextBlock Text="Bitiş tarihi (gg.aa.yyyy) — süresiz için boş bırak" Foreground="#555"/>
+        <TextBox x:Name="TxtExpiry" Padding="4" Width="160" HorizontalAlignment="Left" Margin="0,2,0,12"/>
+
+        <Button Content="Lisans Anahtarı Üret" FontSize="16" FontWeight="SemiBold" Padding="10,8" Background="#F76707" Foreground="White" Click="Generate_Click"/>
+
+        <TextBlock Text="Lisans anahtarı (müşteriye gönder)" Foreground="#555" Margin="0,12,0,0"/>
+        <TextBox x:Name="TxtResult" Height="90" TextWrapping="Wrap" IsReadOnly="True" FontFamily="Consolas" FontSize="12" Margin="0,2,0,6"/>
+        <Button Content="Kopyala" Width="120" HorizontalAlignment="Right" Click="Copy_Click"/>
+    </StackPanel>
+</Window>
