@@ -1,0 +1,68 @@
+<Window x:Class="KasaPos.StockWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Stok ve Reçete" Width="1060" Height="700" WindowStartupLocation="CenterOwner"
+        FontFamily="Segoe UI" Background="{StaticResource PanelBg}">
+    <DockPanel Margin="12">
+        <Button DockPanel.Dock="Bottom" Content="Kapat" Width="120" IsCancel="True" HorizontalAlignment="Right"/>
+        <TabControl x:Name="Tabs">
+            <TabItem Header="Stok Kartları">
+                <DockPanel Margin="8">
+                    <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Foreground="{StaticResource TextSub}" Margin="4,0,4,6"
+                               Text="Malzemeleri (et, ekmek, lavaş, ayran, ambalaj…) ekle. Mevcut miktar, 'Stok Girişi' ve 'Sayım' ile değişir; satışlarda reçeteye göre otomatik düşer. Kırmızı satırlar kritik seviyenin altında."/>
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal">
+                        <Button Content="Kartları Kaydet" Style="{StaticResource AccentButton}" Click="SaveItems_Click"/>
+                        <Button Content="+ Stok Girişi (alım)" Click="StockIn_Click"/>
+                        <Button Content="Sayım / Düzelt" Click="Count_Click"/>
+                        <Button Content="Fire / Zayi" Click="Waste_Click"/>
+                    </StackPanel>
+                    <DataGrid x:Name="GridItems" CanUserAddRows="True" CanUserDeleteRows="False" LoadingRow="GridItems_LoadingRow">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Malzeme" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="Birim (kg, adet, lt)" Binding="{Binding Unit}" Width="140"/>
+                            <DataGridTextColumn Header="Mevcut" Binding="{Binding QtyText, Mode=OneWay}" IsReadOnly="True" Width="130"/>
+                            <DataGridTextColumn Header="Kritik seviye" Binding="{Binding MinQty}" Width="110"/>
+                            <DataGridTextColumn Header="Birim maliyet ₺" Binding="{Binding Cost, StringFormat=N2}" Width="130"/>
+                            <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Active}" Width="60"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+
+            <TabItem Header="Reçeteler">
+                <DockPanel Margin="8">
+                    <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Foreground="{StaticResource TextSub}" Margin="4,0,4,6"
+                               Text="Bir ürün satıldığında hangi malzemeden ne kadar düşüleceğini yaz. Örnek: Tavuk Döner Dürüm → Tavuk döner 0,1 kg + Lavaş 1 adet."/>
+                    <DockPanel DockPanel.Dock="Top">
+                        <TextBlock Text="Ürün:" VerticalAlignment="Center" Margin="4,0" FontSize="15"/>
+                        <ComboBox x:Name="CmbProduct" Width="360" HorizontalAlignment="Left" DisplayMemberPath="Name" SelectionChanged="CmbProduct_SelectionChanged"/>
+                    </DockPanel>
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal">
+                        <Button Content="Reçeteyi Kaydet" Style="{StaticResource AccentButton}" Click="SaveRecipe_Click"/>
+                        <TextBlock x:Name="TxtRecipeCost" VerticalAlignment="Center" Margin="12,0" FontSize="15" FontWeight="SemiBold"/>
+                    </StackPanel>
+                    <DataGrid x:Name="GridRecipe" CanUserAddRows="True" CanUserDeleteRows="True" Margin="3,8,3,3">
+                        <DataGrid.Columns>
+                            <DataGridComboBoxColumn x:Name="ColRecipeItem" Header="Malzeme" SelectedValueBinding="{Binding StockItemId}"
+                                                    SelectedValuePath="Id" DisplayMemberPath="Display" Width="*"/>
+                            <DataGridTextColumn Header="Miktar (malzemenin biriminde)" Binding="{Binding Qty}" Width="240"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+
+            <TabItem Header="Hareketler">
+                <DataGrid x:Name="GridMoves" IsReadOnly="True" Margin="8">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Tarih" Binding="{Binding TimeText}" Width="110"/>
+                        <DataGridTextColumn Header="Malzeme" Binding="{Binding ItemName}" Width="*"/>
+                        <DataGridTextColumn Header="Miktar" Binding="{Binding QtyText}" Width="130"/>
+                        <DataGridTextColumn Header="Tür" Binding="{Binding Reason}" Width="100"/>
+                        <DataGridTextColumn Header="Açıklama" Binding="{Binding Note}" Width="200"/>
+                        <DataGridTextColumn Header="Kullanıcı" Binding="{Binding UserName}" Width="110"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

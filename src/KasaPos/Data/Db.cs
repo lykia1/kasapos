@@ -146,6 +146,38 @@ CREATE INDEX IF NOT EXISTS ix_pay_order ON payments(order_id);
             EnsureColumn("orders", "courier_name", "TEXT");
             EnsureColumn("orders", "dispatched_at", "TEXT");
 
+            // v0.5 eklemeleri: stok, reçete, arama kaydı
+            Exec(@"CREATE TABLE IF NOT EXISTS stock_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  unit TEXT NOT NULL DEFAULT 'adet',
+  qty REAL NOT NULL DEFAULT 0,
+  min_qty REAL NOT NULL DEFAULT 0,
+  cost REAL NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1)");
+            Exec(@"CREATE TABLE IF NOT EXISTS recipes (
+  product_id INTEGER NOT NULL,
+  stock_item_id INTEGER NOT NULL,
+  qty REAL NOT NULL,
+  PRIMARY KEY(product_id, stock_item_id))");
+            Exec(@"CREATE TABLE IF NOT EXISTS stock_moves (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  created_at TEXT NOT NULL,
+  business_day TEXT NOT NULL,
+  stock_item_id INTEGER NOT NULL,
+  qty REAL NOT NULL,
+  unit_cost REAL NOT NULL DEFAULT 0,
+  reason TEXT NOT NULL,
+  order_id INTEGER,
+  note TEXT,
+  user_name TEXT)");
+            Exec(@"CREATE TABLE IF NOT EXISTS calls (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  created_at TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  customer_id INTEGER)");
+            Exec("CREATE INDEX IF NOT EXISTS ix_moves_day ON stock_moves(business_day)");
+
             if (Convert.ToInt64(Scalar("SELECT COUNT(*) FROM payment_types")) == 0)
             {
                 var defaults = new[] { "Nakit", "Kredi Kartı", "Multinet", "Pluxee (Sodexo)", "Edenred (Ticket)", "Setcard", "Metropol", "Açık Hesap" };

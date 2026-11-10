@@ -53,6 +53,14 @@ namespace KasaPos
             _payTypes = new ObservableCollection<PaymentType>(PaymentRepo.Types(false));
             GridPayTypes.ItemsSource = _payTypes;
 
+            ChkCid.IsChecked = Settings.GetBool("callerid_enabled", false);
+            foreach (var port in CallerId.Ports()) CmbCidPort.Items.Add(port);
+            CmbCidPort.Text = Settings.Get("callerid_port");
+            foreach (var b in new[] { "1200", "2400", "4800", "9600", "19200", "38400", "115200" }) CmbCidBaud.Items.Add(b);
+            CmbCidBaud.Text = Settings.GetInt("callerid_baud", 9600).ToString();
+            TxtCidInit.Text = Settings.Get("callerid_init");
+            TxtCidStatus.Text = CallerId.IsRunning ? "Durum: dinleniyor (" + Settings.Get("callerid_port") + ")" : "Durum: kapalı";
+
             TxtDataDir.Text = Db.DataDir;
             TxtVersion.Text = AppInfo.Name + " sürüm " + AppInfo.Version;
         }
@@ -115,6 +123,22 @@ namespace KasaPos
             Settings.Set("receipt_width_px", px.ToString());
             Settings.Set("receipt_font_size", fs.ToString());
 
+            int baud;
+            if (!int.TryParse((CmbCidBaud.Text ?? "").Trim(), out baud) || baud <= 0) baud = 9600;
+            bool cidChanged = Settings.GetBool("callerid_enabled", false) != (ChkCid.IsChecked == true)
+                || Settings.Get("callerid_port") != (CmbCidPort.Text ?? "").Trim()
+                || Settings.GetInt("callerid_baud", 9600) != baud
+                || Settings.Get("callerid_init") != TxtCidInit.Text.Trim();
+            Settings.SetBool("callerid_enabled", ChkCid.IsChecked == true);
+            Settings.Set("callerid_port", (CmbCidPort.Text ?? "").Trim());
+            Settings.Set("callerid_baud", baud.ToString());
+            Settings.Set("callerid_init", TxtCidInit.Text.Trim());
+            if (cidChanged)
+            {
+                var cidErr = CallerId.Start();
+                if (cidErr != null) MessageBox.Show(cidErr, Title);
+            }
+
             foreach (var u in users) UserRepo.Save(u);
             foreach (var c in _couriers.Where(c => !string.IsNullOrWhiteSpace(c.Name)))
             {
@@ -154,6 +178,13 @@ namespace KasaPos
             };
             var err = Printer.Print(CmbReceipt.SelectedItem as string, lines, "Test");
             if (err != null) MessageBox.Show("Yazdırılamadı: " + err, Title);
+        }
+
+        private void CidTest_Click(object sender, RoutedEventArgs e)
+        {
+            var n = InputDialog.Ask(this, "Test Araması", "Denemek için bir telefon numarası yaz:", "05321234567");
+            if (string.IsNullOrWhiteSpace(n)) return;
+            CallerId.Raise(n);
         }
 
         private void BackupNow_Click(object sender, RoutedEventArgs e)

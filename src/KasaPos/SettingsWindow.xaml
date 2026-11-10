@@ -103,6 +103,34 @@
                 </DockPanel>
             </TabItem>
 
+            <TabItem Header="Caller ID">
+                <StackPanel Margin="10">
+                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSub}" Margin="4,0,4,6"
+                               Text="Telefon hattına bağlı arayan numara cihazı (COM / USB-seri port üzerinden numara gönderen cihazlar ve modemler) desteklenir. Arama gelince müşteri bilgisi ekranın sağ altında açılır; 'Paket Sipariş Aç' ile doğrudan paket siparişe geçilir."/>
+                    <CheckBox x:Name="ChkCid" Content="Caller ID açık"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Port" Style="{StaticResource Label}"/>
+                            <ComboBox x:Name="CmbCidPort" IsEditable="True"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Hız (baud)" Style="{StaticResource Label}"/>
+                            <ComboBox x:Name="CmbCidBaud" IsEditable="True"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="Başlatma komutu (modemler için, ör. AT+VCID=1 — cihazında gerekmiyorsa boş bırak)" Style="{StaticResource Label}"/>
+                    <TextBox x:Name="TxtCidInit"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button Content="Test Araması Yap" Click="CidTest_Click"/>
+                        <TextBlock x:Name="TxtCidStatus" VerticalAlignment="Center" Margin="10,0" Foreground="{StaticResource TextSub}"/>
+                    </StackPanel>
+                </StackPanel>
+            </TabItem>
+
             <TabItem Header="Yedekleme">
                 <StackPanel Margin="10">
                     <TextBlock TextWrapping="Wrap" Margin="4" Text="Program her açılışta günlük yedek alır ve son 30 yedeği saklar. Bilgisayar arızasına karşı yedek klasörünü düzenli olarak bir USB belleğe kopyala."/>

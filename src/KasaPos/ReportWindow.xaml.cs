@@ -99,6 +99,18 @@ JOIN orders o ON o.id=i.order_id WHERE o.status='PAID' AND o." + where.Trim() + 
             foreach (var x in items) l.Add(Printer.LR(x.Item2.ToString("0.##", Money.Tr) + " x " + x.Item1, Money.Fmt(x.Item3)));
             l.Add(Printer.Line());
 
+            decimal matCost = Dec(Db.Scalar("SELECT SUM(-qty*unit_cost) FROM stock_moves WHERE reason='SATIŞ' AND" + where, p));
+            if (matCost != 0)
+            {
+                l.Add("#MALİYET (reçeteye göre)");
+                l.Add(Printer.LR("Malzeme maliyeti", "-" + Money.Fmt(matCost)));
+                l.Add(Printer.LR("Brüt kâr", Money.Fmt(net - matCost)));
+                if (net > 0) l.Add(Printer.LR("Brüt kâr oranı", "%" + Math.Round((net - matCost) / net * 100, 1).ToString(Money.Tr)));
+                l.Add(Printer.Line());
+            }
+            var fire = Dec(Db.Scalar("SELECT SUM(-qty*unit_cost) FROM stock_moves WHERE reason='FİRE' AND" + where, p));
+            if (fire != 0) l.Add(Printer.LR("Fire / zayi (maliyet)", "-" + Money.Fmt(fire)));
+
             l.Add(Printer.LR("Giderler", "-" + Money.Fmt(expenses)));
             var cashName = PaymentRepo.Types(false).Where(t => t.IsCash).Select(t => t.Name).ToList();
             decimal cash = pays.Where(x => cashName.Contains(x.Item1)).Sum(x => x.Item2);

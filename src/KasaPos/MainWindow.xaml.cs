@@ -30,6 +30,9 @@ namespace KasaPos
             NewOrder(OrderTypes.GelAl);
             RefreshOpenOrders();
             ShowHome();
+            CallerId.Call += OnIncomingCall;
+            var cidErr = CallerId.Start();
+            if (cidErr != null) Loaded += (s, e) => MessageBox.Show(cidErr, AppInfo.Name);
             _timer.Tick += (s, e) =>
             {
                 UpdateHeader();
@@ -50,6 +53,7 @@ namespace KasaPos
             BtnTables.Visibility = vis;
             BtnSettings.Visibility = vis;
             BtnReports.Visibility = vis;
+            BtnStock.Visibility = vis;
             UpdateHeader();
         }
 
@@ -667,6 +671,7 @@ namespace KasaPos
             OrderRepo.Save(_order);
             SendToKitchenIfEnabled();
             OrderRepo.Save(_order);
+            StockRepo.ConsumeForOrder(_order, Me?.Name);
 
             if (Settings.GetBool("receipt_auto", false) || printReceipt)
             {
@@ -757,6 +762,7 @@ namespace KasaPos
                 TxtStatCount.Text = cnt == null ? "0" : cnt.ToString();
                 TxtStatTables.Text = open.Count(o => o.OrderType == OrderTypes.Masa).ToString();
                 TxtStatPaket.Text = open.Count(o => o.OrderType == OrderTypes.Paket && o.DispatchedAt.HasValue).ToString();
+                TxtStatStock.Text = StockRepo.LowCount().ToString();
             }
             catch { }
         }
@@ -785,6 +791,30 @@ namespace KasaPos
         {
             NewOrder(OrderTypes.GelAl);
             ShowSale();
+        }
+
+        private void BtnStock_Click(object sender, RoutedEventArgs e)
+        {
+            new StockWindow { Owner = this }.ShowDialog();
+            RefreshOpenOrders();
+        }
+
+        private void OnIncomingCall(string phone)
+        {
+            var popup = new CallerPopup(phone);
+            popup.Closed += (s, e) =>
+            {
+                if (!popup.OpenOrder) return;
+                if (!ConfirmLeaveUnsaved()) return;
+                if (!IsVisible) return;
+                NewOrder(OrderTypes.Paket);
+                ShowSale();
+                TxtPhone.Text = phone;
+                FindCustomer();
+                Activate();
+                if (string.IsNullOrWhiteSpace(TxtCustName.Text)) TxtCustName.Focus();
+            };
+            popup.Show();
         }
 
         private void BtnExit_Click(object sender, RoutedEventArgs e)
@@ -880,6 +910,7 @@ namespace KasaPos
             part.PaidAt = DateTime.Now;
             part.BusinessDay = Settings.BusinessDay(part.PaidAt.Value);
             OrderRepo.Save(part);
+            StockRepo.ConsumeForOrder(part, Me?.Name);
             if (Settings.GetBool("receipt_auto", false) || pay.PrintReceipt)
             {
                 var err = Printer.PrintReceipt(part, pay.Change);
@@ -991,6 +1022,7 @@ namespace KasaPos
 
         private void Window_Closed(object sender, EventArgs e)
         {
+            CallerId.Stop();
             Application.Current.Shutdown();
         }
     }
