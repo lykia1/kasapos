@@ -5,16 +5,15 @@
         WindowState="Maximized" Icon="/app.ico" FontFamily="Segoe UI" Background="#E9EDF2"
         Closed="Window_Closed">
     <Window.Resources>
-        <!-- Ana ekran kutucuğu -->
+        <!-- Ana ekran kutucuğu (renk Ayarlar'dan) -->
+        <SolidColorBrush x:Key="TileBrush" Color="#E8590C"/>
         <Style x:Key="HomeTile" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{DynamicResource TileBrush}"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Margin" Value="7"/>
-            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="Margin" Value="5"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="VerticalContentAlignment" Value="Bottom"/>
-            <Setter Property="Padding" Value="18,14"/>
+            <Setter Property="Padding" Value="6"/>
         </Style>
         <!-- Alt işlem çubuğu düğmesi -->
         <Style x:Key="BarButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
@@ -52,110 +51,154 @@
 
         <Grid>
             <!-- ================= ANA EKRAN ================= -->
-            <Grid x:Name="ViewHome" Margin="10">
+            <Grid x:Name="ViewHome" Margin="8" Background="#EEF1F4">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="330"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="2.3*"/>
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-                <DockPanel>
-                    <!-- Günün özeti -->
-                    <UniformGrid DockPanel.Dock="Top" Columns="5" Margin="0,0,0,6">
-                        <Border Style="{StaticResource Card}" Margin="7">
-                            <StackPanel>
-                                <TextBlock Text="Bugünkü ciro" Foreground="{StaticResource TextSub}" FontSize="13"/>
-                                <TextBlock x:Name="TxtStatSales" FontSize="26" FontWeight="Bold" Foreground="#2F9E44"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}" Margin="7">
-                            <StackPanel>
-                                <TextBlock Text="Satış sayısı" Foreground="{StaticResource TextSub}" FontSize="13"/>
-                                <TextBlock x:Name="TxtStatCount" FontSize="26" FontWeight="Bold" Foreground="#1971C2"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}" Margin="7">
-                            <StackPanel>
-                                <TextBlock Text="Açık masa" Foreground="{StaticResource TextSub}" FontSize="13"/>
-                                <TextBlock x:Name="TxtStatTables" FontSize="26" FontWeight="Bold" Foreground="#E8590C"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}" Margin="7">
-                            <StackPanel>
-                                <TextBlock Text="Yoldaki paket" Foreground="{StaticResource TextSub}" FontSize="13"/>
-                                <TextBlock x:Name="TxtStatPaket" FontSize="26" FontWeight="Bold" Foreground="#7048E8"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Style="{StaticResource Card}" Margin="7">
-                            <StackPanel>
-                                <TextBlock Text="Kritik stok" Foreground="{StaticResource TextSub}" FontSize="13"/>
-                                <TextBlock x:Name="TxtStatStock" FontSize="26" FontWeight="Bold" Foreground="#E03131"/>
-                            </StackPanel>
-                        </Border>
-                    </UniformGrid>
+                <Button Style="{StaticResource HomeTile}" Click="HomeMasa_Click" Grid.Row="0" Grid.Column="0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE80A;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Masalar" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource HomeTile}" Click="HomePaket_Click" Grid.Row="0" Grid.Column="1">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE804;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Paket Servis" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource HomeTile}" Click="HomeGelAl_Click" Grid.Row="0" Grid.Column="2">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE719;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Gel Al" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource HomeTile}" Click="BtnKds_Click" Grid.Row="0" Grid.Column="3">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Mutfak Ekranı" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource HomeTile}" Click="BtnCustomers_Click" Grid.Row="0" Grid.Column="4">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Müşteriler" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource HomeTile}" Click="BtnExpenses_Click" Grid.Row="0" Grid.Column="5">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE8EF;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Giderler" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="BtnReports" Style="{StaticResource HomeTile}" Click="BtnReports_Click" Grid.Row="1" Grid.Column="0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Raporlar" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="BtnStock" Style="{StaticResource HomeTile}" Click="BtnStock_Click" Grid.Row="2" Grid.Column="0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE7B8;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Stok / Reçete" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="BtnMenu" Style="{StaticResource HomeTile}" Click="BtnMenu_Click" Grid.Row="3" Grid.Column="0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE8FD;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Menü / Ürünler" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="BtnTables" Style="{StaticResource HomeTile}" Click="BtnTables_Click" Grid.Row="3" Grid.Column="1">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE71D;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Masa Düzeni" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="BtnSettings" Style="{StaticResource HomeTile}" Click="BtnSettings_Click" Grid.Row="3" Grid.Column="2">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Ayarlar" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource HomeTile}" Click="BtnLicense_Click" Grid.Row="3" Grid.Column="3">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE8D7;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Lisans" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource HomeTile}" Click="BtnLock_Click" Grid.Row="3" Grid.Column="4">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Kilitle" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource HomeTile}" Click="BtnExit_Click" Grid.Row="3" Grid.Column="5">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE7E8;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Çıkış" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
 
-                    <!-- Büyük kutucuklar -->
-                    <UniformGrid Columns="5" Rows="3">
-                        <Button Style="{StaticResource HomeTile}" Background="#2F9E44" Click="HomeMasa_Click">
-                            <StackPanel><TextBlock Text="▦" FontSize="34"/><TextBlock Text="Masalar"/></StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource HomeTile}" Background="#1971C2" Click="HomePaket_Click">
-                            <StackPanel><TextBlock Text="🛵" FontSize="34"/><TextBlock Text="Paket Servis"/></StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource HomeTile}" Background="#F76707" Click="HomeGelAl_Click">
-                            <StackPanel><TextBlock Text="🛍" FontSize="34"/><TextBlock Text="Gel Al / Hızlı Satış"/></StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource HomeTile}" Background="#E03131" Click="BtnKds_Click">
-                            <StackPanel><TextBlock Text="🔥" FontSize="34"/><TextBlock Text="Mutfak Ekranı"/></StackPanel>
-                        </Button>
-                        <Button x:Name="BtnReports" Style="{StaticResource HomeTile}" Background="#7048E8" Click="BtnReports_Click">
-                            <StackPanel><TextBlock Text="📊" FontSize="34"/><TextBlock Text="Raporlar"/></StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource HomeTile}" Background="#0C8599" Click="BtnCustomers_Click">
-                            <StackPanel><TextBlock Text="👥" FontSize="34"/><TextBlock Text="Müşteriler"/></StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource HomeTile}" Background="#D6336C" Click="BtnExpenses_Click">
-                            <StackPanel><TextBlock Text="🧾" FontSize="34"/><TextBlock Text="Giderler"/></StackPanel>
-                        </Button>
-                        <Button x:Name="BtnMenu" Style="{StaticResource HomeTile}" Background="#8D5524" Click="BtnMenu_Click">
-                            <StackPanel><TextBlock Text="🍽" FontSize="34"/><TextBlock Text="Menü / Ürünler"/></StackPanel>
-                        </Button>
-                        <Button x:Name="BtnStock" Style="{StaticResource HomeTile}" Background="#5F3DC4" Click="BtnStock_Click">
-                            <StackPanel><TextBlock Text="📦" FontSize="34"/><TextBlock Text="Stok / Reçete"/></StackPanel>
-                        </Button>
-                        <Button x:Name="BtnTables" Style="{StaticResource HomeTile}" Background="#495057" Click="BtnTables_Click">
-                            <StackPanel><TextBlock Text="⊞" FontSize="34"/><TextBlock Text="Masa Düzeni"/></StackPanel>
-                        </Button>
-                        <Button x:Name="BtnSettings" Style="{StaticResource HomeTile}" Background="#343A40" Click="BtnSettings_Click">
-                            <StackPanel><TextBlock Text="⚙" FontSize="34"/><TextBlock Text="Ayarlar"/></StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource HomeTile}" Background="#868E96" Click="BtnLock_Click">
-                            <StackPanel><TextBlock Text="🔒" FontSize="34"/><TextBlock Text="Kilitle / Kullanıcı Değiştir"/></StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource HomeTile}" Background="#212529" Click="BtnExit_Click">
-                            <StackPanel><TextBlock Text="⏻" FontSize="34"/><TextBlock Text="Çıkış"/></StackPanel>
-                        </Button>
-                    </UniformGrid>
-                </DockPanel>
-
-                <!-- Açık siparişler -->
-                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="7">
+                <!-- Orta panel: günün özeti ve açık siparişler -->
+                <Border Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" Grid.ColumnSpan="5" Background="White" CornerRadius="10" Margin="5" Padding="14,10">
                     <DockPanel>
-                        <DockPanel DockPanel.Dock="Top" Margin="2,0,2,8">
-                            <TextBlock x:Name="TxtOpenCount" DockPanel.Dock="Right" Foreground="{StaticResource TextSub}" FontSize="13" VerticalAlignment="Center"/>
-                            <TextBlock Text="Açık Siparişler" FontWeight="Bold" FontSize="17" Foreground="{StaticResource TextMain}"/>
+                        <UniformGrid DockPanel.Dock="Top" Columns="5">
+                            <StackPanel Margin="4">
+                                <TextBlock Text="Bugünkü ciro" Foreground="#868E96" FontSize="13"/>
+                                <TextBlock x:Name="TxtStatSales" FontSize="24" FontWeight="Bold" Foreground="#2F9E44"/>
+                            </StackPanel>
+                            <StackPanel Margin="4">
+                                <TextBlock Text="Satış sayısı" Foreground="#868E96" FontSize="13"/>
+                                <TextBlock x:Name="TxtStatCount" FontSize="24" FontWeight="Bold" Foreground="#1971C2"/>
+                            </StackPanel>
+                            <StackPanel Margin="4">
+                                <TextBlock Text="Açık masa" Foreground="#868E96" FontSize="13"/>
+                                <TextBlock x:Name="TxtStatTables" FontSize="24" FontWeight="Bold" Foreground="#E8590C"/>
+                            </StackPanel>
+                            <StackPanel Margin="4">
+                                <TextBlock Text="Yoldaki paket" Foreground="#868E96" FontSize="13"/>
+                                <TextBlock x:Name="TxtStatPaket" FontSize="24" FontWeight="Bold" Foreground="#7048E8"/>
+                            </StackPanel>
+                            <StackPanel Margin="4">
+                                <TextBlock Text="Kritik stok" Foreground="#868E96" FontSize="13"/>
+                                <TextBlock x:Name="TxtStatStock" FontSize="24" FontWeight="Bold" Foreground="#E03131"/>
+                            </StackPanel>
+                        </UniformGrid>
+                        <Border DockPanel.Dock="Top" Height="1" Background="#E9ECEF" Margin="0,8"/>
+                        <DockPanel DockPanel.Dock="Top" Margin="2,0,2,6">
+                            <TextBlock x:Name="TxtOpenCount" DockPanel.Dock="Right" Foreground="#868E96" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBlock Text="Açık Siparişler" FontWeight="Bold" FontSize="16" Foreground="#212529"/>
                         </DockPanel>
                         <ListBox x:Name="LstOpen" SelectionChanged="LstOpen_SelectionChanged" Background="Transparent" BorderThickness="0"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch">
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
                             <ListBox.ItemContainerStyle>
                                 <Style TargetType="ListBoxItem">
                                     <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="Margin" Value="0,0,0,6"/>
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Margin" Value="0,0,8,8"/>
                                 </Style>
                             </ListBox.ItemContainerStyle>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#F8F9FA" BorderBrush="#DEE2E6" BorderThickness="4,1,1,1" CornerRadius="8" Padding="10,8">
+                                    <Border Width="190" Background="#F8F9FA" BorderBrush="#DEE2E6" BorderThickness="4,1,1,1" CornerRadius="8" Padding="10,8">
                                         <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontSize="14" Foreground="#212529"/>
                                     </Border>
                                 </DataTemplate>
@@ -163,8 +206,28 @@
                         </ListBox>
                     </DockPanel>
                 </Border>
-            </Grid>
 
+                <!-- Sağ üst: işletme kutusu -->
+                <Border Grid.Row="0" Grid.Column="6" Background="White" CornerRadius="10" Margin="5" Padding="14,10">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Left" Background="{DynamicResource TileBrush}" CornerRadius="12" Width="64" Height="64" Margin="0,0,14,0">
+                            <TextBlock x:Name="TxtHomeLogo" Foreground="White" FontWeight="Bold" FontSize="30" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock x:Name="TxtHomeBiz" FontSize="22" FontWeight="Bold" Foreground="#212529" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock x:Name="TxtHomeDate" FontSize="14" Foreground="#868E96"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Sağ: gelen aramalar -->
+                <Border Grid.Row="1" Grid.Column="6" Grid.RowSpan="3" Background="White" CornerRadius="10" Margin="5" Padding="10">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="Son Aramalar" FontWeight="Bold" FontSize="16" Foreground="#212529" Margin="4,0,4,8"/>
+                        <StackPanel x:Name="PnlCalls"/>
+                    </DockPanel>
+                </Border>
+            </Grid>
             <!-- ================= SATIŞ EKRANI ================= -->
             <Grid x:Name="ViewSale" Visibility="Collapsed">
                 <Grid.ColumnDefinitions>

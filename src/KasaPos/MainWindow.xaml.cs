@@ -67,6 +67,10 @@ namespace KasaPos
             var day = DateTime.ParseExact(Settings.BusinessDay(DateTime.Now), "yyyy-MM-dd", null);
             TxtDay.Text = "İş günü: " + day.ToString("d MMMM dddd", Money.Tr);
             TxtClock.Text = DateTime.Now.ToString("HH:mm");
+            TxtHomeBiz.Text = biz;
+            TxtHomeLogo.Text = TxtLogo.Text;
+            TxtHomeDate.Text = DateTime.Now.ToString("d MMMM yyyy dddd  ·  HH:mm", Money.Tr);
+            Resources["TileBrush"] = Palette.Brush(Settings.Get("theme_color", "Turuncu"), Palette.Brush("Turuncu"));
             var ls = Licensing.State;
             BtnLicense.Visibility = ls == LicenseState.Licensed ? Visibility.Collapsed : Visibility.Visible;
             BtnLicense.Content = ls == LicenseState.Trial ? "Deneme: " + Licensing.TrialDaysLeft + " gün kaldı" : "Lisans gerekli";
@@ -784,6 +788,7 @@ namespace KasaPos
                 TxtStatTables.Text = open.Count(o => o.OrderType == OrderTypes.Masa).ToString();
                 TxtStatPaket.Text = open.Count(o => o.OrderType == OrderTypes.Paket && o.DispatchedAt.HasValue).ToString();
                 TxtStatStock.Text = StockRepo.LowCount().ToString();
+                RefreshCalls();
             }
             catch { }
         }
@@ -814,6 +819,63 @@ namespace KasaPos
             ShowSale();
         }
 
+        private void RefreshCalls()
+        {
+            PnlCalls.Children.Clear();
+            var calls = CallRepo.Recent(6);
+            if (calls.Count == 0)
+            {
+                PnlCalls.Children.Add(new TextBlock
+                {
+                    Text = "Henüz arama yok.\nCaller ID cihazını Ayarlar > Caller ID'den bağlayınca gelen aramalar burada görünür.",
+                    Foreground = new SolidColorBrush(Color.FromRgb(0x86, 0x8E, 0x96)),
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(4)
+                });
+                return;
+            }
+            foreach (var c in calls)
+            {
+                var g = new Grid();
+                g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                var icon = new Border
+                {
+                    Background = (Brush)Resources["TileBrush"],
+                    CornerRadius = new CornerRadius(8),
+                    Width = 44,
+                    Height = 44,
+                    Margin = new Thickness(0, 0, 10, 0),
+                    Child = new TextBlock { Text = "\uE717", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 20, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center }
+                };
+                g.Children.Add(icon);
+                var info = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+                info.Children.Add(new TextBlock { Text = string.IsNullOrWhiteSpace(c.Name) ? c.Phone : c.Name, FontWeight = FontWeights.SemiBold, FontSize = 15, Foreground = Brushes.Black, TextTrimming = TextTrimming.CharacterEllipsis });
+                info.Children.Add(new TextBlock { Text = c.At.ToString("HH:mm") + "  ·  " + c.Phone, FontSize = 12, Foreground = Brushes.Gray });
+                Grid.SetColumn(info, 1);
+                g.Children.Add(info);
+                var b = new Button
+                {
+                    Content = g,
+                    Tag = c.Phone,
+                    HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                    Background = new SolidColorBrush(Color.FromRgb(0xF8, 0xF9, 0xFA)),
+                    Margin = new Thickness(0, 0, 0, 8),
+                    Padding = new Thickness(8),
+                    ToolTip = "Bu numara için paket sipariş aç"
+                };
+                b.Click += (s, e) =>
+                {
+                    var phone = (string)((Button)s).Tag;
+                    NewOrder(OrderTypes.Paket);
+                    ShowSale();
+                    TxtPhone.Text = phone;
+                    FindCustomer();
+                };
+                PnlCalls.Children.Add(b);
+            }
+        }
+
         private void BtnStock_Click(object sender, RoutedEventArgs e)
         {
             new StockWindow { Owner = this }.ShowDialog();
@@ -836,6 +898,7 @@ namespace KasaPos
                 if (string.IsNullOrWhiteSpace(TxtCustName.Text)) TxtCustName.Focus();
             };
             popup.Show();
+            RefreshCalls();
         }
 
         private void BtnExit_Click(object sender, RoutedEventArgs e)

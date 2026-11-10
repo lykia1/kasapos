@@ -155,8 +155,26 @@ LEFT JOIN stock_items s ON s.id=m.stock_item_id ORDER BY m.id DESC LIMIT " + lim
             });
     }
 
+    public class CallEntry
+    {
+        public DateTime At { get; set; }
+        public string Phone { get; set; }
+        public string Name { get; set; }
+        public string Address { get; set; }
+    }
+
     public static class CallRepo
     {
+        public static List<CallEntry> Recent(int n) =>
+            Db.Query(@"SELECT c.created_at, c.phone, cu.name, cu.address FROM calls c
+LEFT JOIN customers cu ON cu.phone=c.phone ORDER BY c.id DESC LIMIT " + n, r => new CallEntry
+            {
+                At = DateTime.ParseExact(Db.S(r, "created_at"), "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
+                Phone = Db.S(r, "phone"),
+                Name = Db.S(r, "name"),
+                Address = Db.S(r, "address")
+            });
+
         public static void Log(string phone, long? customerId) =>
             Db.Exec("INSERT INTO calls(created_at,phone,customer_id) VALUES(@c,@p,@cid)",
                 ("@c", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)), ("@p", phone), ("@cid", customerId));

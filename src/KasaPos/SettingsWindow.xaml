@@ -21,6 +21,8 @@
                     <TextBox x:Name="TxtFooter"/>
                     <TextBlock Text="İş günü kapanış saati (bu saatten önceki satışlar bir önceki güne yazılır)" Style="{StaticResource Label}"/>
                     <ComboBox x:Name="CmbCutoff" Width="120" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Ana ekran kutucuk rengi" Style="{StaticResource Label}"/>
+                    <ComboBox x:Name="CmbTheme" Width="200" HorizontalAlignment="Left"/>
                 </StackPanel>
             </TabItem>
 

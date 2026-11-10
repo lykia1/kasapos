@@ -26,6 +26,10 @@ namespace KasaPos
             for (int h = 0; h <= 12; h++) CmbCutoff.Items.Add(h.ToString("00") + ":00");
             CmbCutoff.SelectedIndex = Math.Min(12, Math.Max(0, Settings.GetInt("day_cutoff_hour", 6)));
 
+            foreach (var n in Palette.Names) if (n != "") CmbTheme.Items.Add(n);
+            CmbTheme.SelectedItem = Settings.Get("theme_color", "Turuncu");
+            if (CmbTheme.SelectedIndex < 0) CmbTheme.SelectedItem = "Turuncu";
+
             var printers = Printer.InstalledPrinters();
             CmbReceipt.Items.Add("");
             CmbKitchen.Items.Add("");
@@ -111,6 +115,7 @@ namespace KasaPos
             if (!int.TryParse(TxtFontSize.Text, out fs) || fs < 6 || fs > 20) fs = 10;
 
             Settings.Set("biz_name", TxtBiz.Text.Trim());
+            Settings.Set("theme_color", CmbTheme.SelectedItem as string ?? "Turuncu");
             Settings.Set("biz_phone", TxtPhone.Text.Trim());
             Settings.Set("biz_address", TxtAddress.Text.Trim());
             Settings.Set("receipt_footer", TxtFooter.Text.Trim());
