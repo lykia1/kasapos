@@ -101,6 +101,12 @@
                     <TextBlock Text="Kategoriler, ürünler, fiyatlar, renkler ve ürün görselleri ile ürün seçenekleri (porsiyon, tercih, ücretli ekstralar)." Style="{StaticResource PageHint}"/>
                     <Button Content="Kategori ve Ürünleri Düzenle" Style="{StaticResource BigAction}" Click="OpenMenu_Click"/>
                     <Button Content="Ürün Seçenekleri ve Ekstralar" Style="{StaticResource BigAction}" Click="OpenOptions_Click"/>
+                    <TextBlock Text="Toplu aktarım" FontWeight="SemiBold" FontSize="16" Margin="4,20,4,2"/>
+                    <TextBlock Style="{StaticResource PageHint}" Text="Excel'de 'Kategori; Ürün; Masa Fiyatı; Gel Al Fiyatı; Paket Fiyatı' sütunlarıyla hazırlayıp 'CSV (noktalı virgülle ayrılmış)' olarak kaydettiğin menüyü tek seferde yükleyebilirsin. Aynı adlı ürünlerin fiyatları güncellenir."/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Menüyü İçe Aktar (Excel / CSV)" Click="ImportMenu_Click" MinHeight="46"/>
+                        <Button Content="Menüyü Dışa Aktar" Click="ExportMenu_Click" MinHeight="46"/>
+                    </StackPanel>
                 </StackPanel>
             </TabItem>
 

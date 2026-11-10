@@ -283,6 +283,40 @@ namespace KasaPos
 
         private void OpenMenu_Click(object sender, RoutedEventArgs e) => new MenuWindow { Owner = this }.ShowDialog();
         private void OpenOptions_Click(object sender, RoutedEventArgs e) => new OptionsAdminWindow { Owner = this }.ShowDialog();
+        private void ImportMenu_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Menü dosyasını seç", Filter = "CSV / metin (*.csv;*.txt)|*.csv;*.txt|Tüm dosyalar (*.*)|*.*" };
+            if (dlg.ShowDialog(this) != true) return;
+            var r = MessageBox.Show("Mevcut ürünler satıştan kaldırılsın mı?\n\nEvet: sadece dosyadaki ürünler satışta kalır (eski/örnek ürünler gizlenir, geçmiş raporlar bozulmaz)\nHayır: dosyadakiler mevcut menüye eklenir / güncellenir",
+                Title, MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            if (r == MessageBoxResult.Cancel) return;
+            try
+            {
+                var res = MenuIO.Import(dlg.FileName, r == MessageBoxResult.Yes);
+                MessageBox.Show("Menü aktarıldı.\n\nYeni kategori: " + res.NewCategories + "\nYeni ürün: " + res.Added + "\nGüncellenen ürün: " + res.Updated +
+                    (res.Skipped > 1 ? "\nAtlanan satır: " + (res.Skipped - 1) : ""), Title, MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Aktarılamadı: " + ex.Message, Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private void ExportMenu_Click(object sender, RoutedEventArgs e)
+        {
+            var dlg = new Microsoft.Win32.SaveFileDialog { Title = "Menüyü kaydet", Filter = "CSV (*.csv)|*.csv", FileName = "menu.csv" };
+            if (dlg.ShowDialog(this) != true) return;
+            try
+            {
+                int n = MenuIO.Export(dlg.FileName);
+                MessageBox.Show(n + " ürün kaydedildi. Dosyayı Excel ile açabilirsin.", Title);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Kaydedilemedi: " + ex.Message, Title);
+            }
+        }
+
         private void OpenStock_Click(object sender, RoutedEventArgs e) => new StockWindow { Owner = this }.ShowDialog();
 
         private void OpenTables_Click(object sender, RoutedEventArgs e)
