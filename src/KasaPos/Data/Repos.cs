@@ -70,8 +70,7 @@ namespace KasaPos.Data
         {
             if (c.Id == 0)
             {
-                using (var con = Db.Open())
-                    return Db.Insert(con, null, "INSERT INTO categories(name,sort,active,color) VALUES(@n,@s,@a,@col)",
+                return Db.Insert("INSERT INTO categories(name,sort,active,color) VALUES(@n,@s,@a,@col)",
                         ("@n", c.Name), ("@s", c.Sort), ("@a", c.Active), ("@col", c.Color));
             }
             Db.Exec("UPDATE categories SET name=@n,sort=@s,active=@a,color=@col WHERE id=@id",
@@ -273,8 +272,7 @@ namespace KasaPos.Data
             var existing = ByPhone(phone);
             if (existing == null)
             {
-                using (var c = Db.Open())
-                    return Db.Insert(c, null, "INSERT INTO customers(phone,name,address,created_at) VALUES(@p,@n,@a,@t)",
+                return Db.Insert("INSERT INTO customers(phone,name,address,created_at) VALUES(@p,@n,@a,@t)",
                         ("@p", phone), ("@n", name), ("@a", address), ("@t", DateTime.Now.ToString("s")));
             }
             Db.Exec("UPDATE customers SET name=@n,address=@a WHERE id=@id", ("@n", name), ("@a", address), ("@id", existing.Id));
@@ -284,13 +282,11 @@ namespace KasaPos.Data
         /// <summary>KVKK: müşteri kaydını siler, geçmiş siparişlerdeki kişisel bilgileri anonimleştirir.</summary>
         public static void DeleteAndAnonymize(long id)
         {
-            using (var c = Db.Open())
-            using (var tx = c.BeginTransaction())
+            Db.Tx(t =>
             {
-                Db.Exec(c, tx, "UPDATE orders SET customer_id=NULL, customer_name='Silinmiş müşteri', customer_phone=NULL, customer_address=NULL WHERE customer_id=@id", ("@id", id));
-                Db.Exec(c, tx, "DELETE FROM customers WHERE id=@id", ("@id", id));
-                tx.Commit();
-            }
+                t.Exec("UPDATE orders SET customer_id=NULL, customer_name='Silinmiş müşteri', customer_phone=NULL, customer_address=NULL WHERE customer_id=@id", ("@id", id));
+                t.Exec("DELETE FROM customers WHERE id=@id", ("@id", id));
+            });
         }
     }
 
@@ -298,7 +294,7 @@ namespace KasaPos.Data
     {
         private const string Iso = "yyyy-MM-dd HH:mm:ss";
 
-        private static Order MapOrder(Microsoft.Data.Sqlite.SqliteDataReader r)
+        private static Order MapOrder(DbRow r)
         {
             var o = new Order
             {
@@ -364,8 +360,7 @@ namespace KasaPos.Data
         public static void Save(Order o)
         {
             if (string.IsNullOrEmpty(o.BusinessDay)) o.BusinessDay = Settings.BusinessDay(o.CreatedAt);
-            using (var c = Db.Open())
-            using (var tx = c.BeginTransaction())
+            Db.Tx(t =>
             {
                 var p = new (string, object)[]
                 {
@@ -380,31 +375,30 @@ namespace KasaPos.Data
                 };
                 if (o.Id == 0)
                 {
-                    o.Id = Db.Insert(c, tx, @"INSERT INTO orders(created_at,paid_at,business_day,order_type,table_no,customer_id,customer_name,customer_phone,customer_address,subtotal,discount,total,status,user_id,user_name,note,courier_id,courier_name,dispatched_at)
+                    o.Id = t.Insert(@"INSERT INTO orders(created_at,paid_at,business_day,order_type,table_no,customer_id,customer_name,customer_phone,customer_address,subtotal,discount,total,status,user_id,user_name,note,courier_id,courier_name,dispatched_at)
 VALUES(@ca,@pa,@bd,@ot,@tn,@cid,@cn,@cp,@cad,@st,@dc,@tt,@s,@uid,@un,@nt,@coid,@con,@dsp)", p);
                 }
                 else
                 {
                     var p2 = p.ToList();
                     p2.Add(("@id", o.Id));
-                    Db.Exec(c, tx, @"UPDATE orders SET created_at=@ca,paid_at=@pa,business_day=@bd,order_type=@ot,table_no=@tn,customer_id=@cid,customer_name=@cn,customer_phone=@cp,customer_address=@cad,
+                    t.Exec(@"UPDATE orders SET created_at=@ca,paid_at=@pa,business_day=@bd,order_type=@ot,table_no=@tn,customer_id=@cid,customer_name=@cn,customer_phone=@cp,customer_address=@cad,
 subtotal=@st,discount=@dc,total=@tt,status=@s,user_id=@uid,user_name=@un,note=@nt,courier_id=@coid,courier_name=@con,dispatched_at=@dsp WHERE id=@id", p2.ToArray());
-                    Db.Exec(c, tx, "DELETE FROM order_items WHERE order_id=@id", ("@id", o.Id));
-                    Db.Exec(c, tx, "DELETE FROM payments WHERE order_id=@id", ("@id", o.Id));
+                    t.Exec("DELETE FROM order_items WHERE order_id=@id", ("@id", o.Id));
+                    t.Exec("DELETE FROM payments WHERE order_id=@id", ("@id", o.Id));
                 }
                 foreach (var it in o.Items)
                 {
-                    it.Id = Db.Insert(c, tx, "INSERT INTO order_items(order_id,product_id,name,qty,unit_price,printed_qty,note,options,options_price) VALUES(@o,@p,@n,@q,@u,@pq,@nt,@op,@opp)",
+                    it.Id = t.Insert("INSERT INTO order_items(order_id,product_id,name,qty,unit_price,printed_qty,note,options,options_price) VALUES(@o,@p,@n,@q,@u,@pq,@nt,@op,@opp)",
                         ("@o", o.Id), ("@p", it.ProductId), ("@n", it.Name), ("@q", it.Qty), ("@u", it.UnitPrice), ("@pq", it.PrintedQty), ("@nt", it.Note),
                         ("@op", it.Options), ("@opp", it.OptionsPrice));
                 }
                 foreach (var pay in o.Payments)
                 {
-                    Db.Exec(c, tx, "INSERT INTO payments(order_id,payment_type_id,payment_name,amount) VALUES(@o,@t,@n,@a)",
+                    t.Exec("INSERT INTO payments(order_id,payment_type_id,payment_name,amount) VALUES(@o,@t,@n,@a)",
                         ("@o", o.Id), ("@t", pay.PaymentTypeId), ("@n", pay.Name), ("@a", pay.Amount));
                 }
-                tx.Commit();
-            }
+            });
         }
 
         public static void MoveTable(long orderId, string newTable) =>
@@ -413,13 +407,11 @@ subtotal=@st,discount=@dc,total=@tt,status=@s,user_id=@uid,user_name=@un,note=@n
         /// <summary>Kaynak siparişin kalemlerini hedefe taşır, kaynağı 'MERGED' yapar.</summary>
         public static void Merge(long sourceId, long targetId)
         {
-            using (var c = Db.Open())
-            using (var tx = c.BeginTransaction())
+            Db.Tx(t =>
             {
-                Db.Exec(c, tx, "UPDATE order_items SET order_id=@t WHERE order_id=@s", ("@t", targetId), ("@s", sourceId));
-                Db.Exec(c, tx, "UPDATE orders SET status='MERGED', note=COALESCE(note,'') || ' [#' || @t || ' ile birleşti]' WHERE id=@s", ("@t", targetId), ("@s", sourceId));
-                tx.Commit();
-            }
+                t.Exec("UPDATE order_items SET order_id=@t WHERE order_id=@s", ("@t", targetId), ("@s", sourceId));
+                t.Exec("UPDATE orders SET status='MERGED', note=COALESCE(note,'') || ' [#' || @t || ' ile birleşti]' WHERE id=@s", ("@t", targetId), ("@s", sourceId));
+            });
             var target = Get(targetId);
             if (target != null) Save(target);
         }

@@ -243,6 +243,51 @@
                 </ScrollViewer>
             </TabItem>
 
+            <TabItem Header="Ağ / Çoklu Bilgisayar">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="4">
+                    <TextBlock Text="Ağ / Çoklu Bilgisayar" Style="{StaticResource PageTitle}"/>
+                    <TextBlock Style="{StaticResource PageHint}"
+                               Text="Dükkanda birden fazla bilgisayar (ikinci kasa, mutfak ekranı, garson için Windows tablet) varsa biri 'Ana kasa' olur, veriler onda tutulur. Diğerleri aynı ağdan (Wi-Fi veya kablo) ona 'Terminal' olarak bağlanır. Yazıcılar, Caller ID ve lisans her bilgisayarda ayrıdır."/>
+                    <RadioButton x:Name="RbNetSingle" Content="Tek bilgisayar (varsayılan)" GroupName="net" FontSize="15" Margin="4,6" Checked="NetMode_Checked"/>
+                    <RadioButton x:Name="RbNetServer" Content="Ana kasa — diğer bilgisayarlar bu bilgisayara bağlanır" GroupName="net" FontSize="15" Margin="4,6" Checked="NetMode_Checked"/>
+                    <RadioButton x:Name="RbNetClient" Content="Terminal — ağdaki ana kasaya bağlan" GroupName="net" FontSize="15" Margin="4,6" Checked="NetMode_Checked"/>
+
+                    <Border x:Name="PnlNetServer" Style="{StaticResource Card}" Margin="3,10,3,3">
+                        <StackPanel>
+                            <TextBlock Text="Bu bilgisayarın adresi (terminallerde bunu yaz)" Style="{StaticResource Label}"/>
+                            <TextBlock x:Name="TxtNetIps" FontSize="22" FontWeight="Bold" FontFamily="Consolas" Margin="4,2"/>
+                            <TextBlock x:Name="TxtNetStatus" Foreground="{StaticResource TextSub}" Margin="4,4"/>
+                        </StackPanel>
+                    </Border>
+                    <Border x:Name="PnlNetClient" Style="{StaticResource Card}" Margin="3,10,3,3">
+                        <StackPanel>
+                            <TextBlock Text="Ana kasanın adresi (ör. 192.168.1.20)" Style="{StaticResource Label}"/>
+                            <TextBox x:Name="TxtNetHost" Width="260" HorizontalAlignment="Left"/>
+                            <Button Content="Bağlantıyı Test Et" HorizontalAlignment="Left" Click="NetTest_Click"/>
+                        </StackPanel>
+                    </Border>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="260"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Port" Style="{StaticResource Label}"/>
+                            <TextBox x:Name="TxtNetPort"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Ağ şifresi (tüm bilgisayarlarda aynı)" Style="{StaticResource Label}"/>
+                            <TextBox x:Name="TxtNetKey"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Foreground="{StaticResource TextSub}" TextWrapping="Wrap" Margin="4,10"
+                               Text="Not: Ana kasayı ilk açtığında Windows Güvenlik Duvarı izin sorarsa 'İzin ver' de. Ağ ayarını değiştirince program yeniden başlar."/>
+                </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <TabItem Header="Yedekleme">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="4">

@@ -27,6 +27,7 @@ namespace KasaPos
             }
             TxtNavVersion.Text = AppInfo.Name + " v" + AppInfo.Version;
             ChkCashRequired.IsChecked = Settings.GetBool("cash_required", false);
+            LoadNet();
             UpdateTablesInfo();
 
             TxtBiz.Text = Settings.Get("biz_name");
@@ -158,6 +159,8 @@ namespace KasaPos
                 if (cidErr != null) MessageBox.Show(cidErr, Title);
             }
 
+            bool netChanged = SaveNet();
+
             foreach (var u in users) UserRepo.Save(u);
             foreach (var c in _couriers.Where(c => !string.IsNullOrWhiteSpace(c.Name)))
             {
@@ -170,6 +173,12 @@ namespace KasaPos
                 PaymentRepo.Save(p);
             }
 
+            if (netChanged)
+            {
+                MessageBox.Show("Ağ ayarı değişti. Program yeniden başlatılacak.", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                App.Restart();
+                return;
+            }
             DialogResult = true;
         }
 
@@ -197,6 +206,72 @@ namespace KasaPos
             };
             var err = Printer.Print(CmbReceipt.SelectedItem as string, lines, "Test");
             if (err != null) MessageBox.Show("Yazdırılamadı: " + err, Title);
+        }
+
+        private string _netModeAtOpen;
+
+        private void LoadNet()
+        {
+            _netModeAtOpen = LocalConfig.Mode;
+            RbNetSingle.IsChecked = _netModeAtOpen == "single";
+            RbNetServer.IsChecked = _netModeAtOpen == "server";
+            RbNetClient.IsChecked = _netModeAtOpen == "client";
+            TxtNetHost.Text = LocalConfig.Host;
+            TxtNetPort.Text = LocalConfig.Port.ToString();
+            TxtNetKey.Text = LocalConfig.Key;
+            var ips = DbServer.LocalAddresses();
+            TxtNetIps.Text = ips.Count == 0 ? "(ağ bağlantısı bulunamadı)" : string.Join("   ", ips);
+            TxtNetStatus.Text = DbServer.IsRunning ? "Sunucu çalışıyor · bağlı terminal: " + DbServer.ClientCount
+                : (Db.IsRemote ? "Bu bilgisayar şu an terminal olarak " + LocalConfig.Host + " adresine bağlı." : "Sunucu kapalı.");
+            NetMode_Checked(null, null);
+        }
+
+        private string SelectedNetMode => RbNetServer.IsChecked == true ? "server" : RbNetClient.IsChecked == true ? "client" : "single";
+
+        private void NetMode_Checked(object sender, RoutedEventArgs e)
+        {
+            if (PnlNetServer == null || PnlNetClient == null) return;
+            PnlNetServer.Visibility = SelectedNetMode == "server" ? Visibility.Visible : Visibility.Collapsed;
+            PnlNetClient.Visibility = SelectedNetMode == "client" ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private int NetPort
+        {
+            get { int p; return int.TryParse(TxtNetPort.Text.Trim(), out p) && p > 0 && p < 65536 ? p : 8787; }
+        }
+
+        private void NetTest_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var rb = new RemoteBackend(TxtNetHost.Text.Trim(), NetPort, TxtNetKey.Text.Trim());
+                rb.Ping();
+                var biz = rb.Scalar("SELECT value FROM settings WHERE key='biz_name'", null);
+                MessageBox.Show("Bağlantı başarılı. Ana kasa: " + (biz ?? "?"), Title, MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Bağlanılamadı: " + ex.Message, Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        /// <summary>Ağ ayarlarını kaydeder; mod değiştiyse true döner (yeniden başlatma gerekir).</summary>
+        private bool SaveNet()
+        {
+            string mode = SelectedNetMode;
+            bool changed = mode != _netModeAtOpen
+                || (mode == "client" && (TxtNetHost.Text.Trim() != LocalConfig.Host || NetPort != LocalConfig.Port || TxtNetKey.Text.Trim() != LocalConfig.Key))
+                || (mode == "server" && (NetPort != LocalConfig.Port || TxtNetKey.Text.Trim() != LocalConfig.Key));
+            if (mode == "client" && string.IsNullOrWhiteSpace(TxtNetHost.Text))
+            {
+                MessageBox.Show("Terminal modu için ana kasanın adresini yaz.", Title);
+                return false;
+            }
+            LocalConfig.Set("net_mode", mode);
+            LocalConfig.Set("net_host", TxtNetHost.Text.Trim());
+            LocalConfig.Set("net_port", NetPort.ToString());
+            LocalConfig.Set("net_key", TxtNetKey.Text.Trim());
+            return changed;
         }
 
         private void UpdateTablesInfo()

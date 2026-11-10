@@ -23,14 +23,8 @@ namespace KasaPos
             FrameworkElement.LanguageProperty.OverrideMetadata(typeof(FrameworkElement),
                 new FrameworkPropertyMetadata(XmlLanguage.GetLanguage("tr-TR")));
 
-            try
+            if (!StartData())
             {
-                Db.Init();
-                Db.Backup();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Veritabanı açılamadı:\n" + ex.Message, AppInfo.Name, MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown();
                 return;
             }
@@ -56,6 +50,70 @@ namespace KasaPos
             }
 
             ShowLoginThenMain();
+        }
+
+        /// <summary>Ağ moduna göre veritabanını hazırlar. Terminal modunda ana kasaya bağlanır.</summary>
+        private bool StartData()
+        {
+            System.IO.Directory.CreateDirectory(Db.DataDir);
+            if (LocalConfig.Mode == "client")
+            {
+                while (true)
+                {
+                    try
+                    {
+                        var rb = new RemoteBackend(LocalConfig.Host, LocalConfig.Port, LocalConfig.Key);
+                        Db.Backend = rb;
+                        rb.Ping();
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        var r = MessageBox.Show("Ana kasaya bağlanılamadı (" + LocalConfig.Host + ":" + LocalConfig.Port + ").\n\n" + ex.Message +
+                            "\n\nEvet: tekrar dene\nHayır: bu bilgisayarı tek başına çalıştır (bağlantı ayarı silinir)\nİptal: programdan çık",
+                            AppInfo.Name, MessageBoxButton.YesNoCancel, MessageBoxImage.Warning);
+                        if (r == MessageBoxResult.Yes) continue;
+                        if (r == MessageBoxResult.No)
+                        {
+                            LocalConfig.Set("net_mode", "single");
+                            Db.Backend = new LocalBackend();
+                            break;
+                        }
+                        return false;
+                    }
+                }
+            }
+
+            try
+            {
+                Db.Init();
+                Db.Backup();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Veritabanı açılamadı:\n" + ex.Message, AppInfo.Name, MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            if (LocalConfig.Mode == "server")
+            {
+                var err = DbServer.Start(LocalConfig.Port, LocalConfig.Key);
+                if (err != null) MessageBox.Show(err + "\n\nBu bilgisayar yine de tek başına çalışacak.", AppInfo.Name, MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            return true;
+        }
+
+        /// <summary>Programı yeniden başlatır (ağ ayarı değişince).</summary>
+        public static void Restart()
+        {
+            try
+            {
+                var exe = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe) { UseShellExecute = true });
+            }
+            catch { }
+            DbServer.Stop();
+            Current.Shutdown();
         }
 
         public static void ShowLoginThenMain()

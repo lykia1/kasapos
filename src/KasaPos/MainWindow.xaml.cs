@@ -62,7 +62,8 @@ namespace KasaPos
             var biz = Settings.Get("biz_name", AppInfo.Name);
             TxtBiz.Text = biz;
             TxtLogo.Text = string.IsNullOrEmpty(biz) ? "K" : biz.Substring(0, 1).ToUpper(Money.Tr);
-            TxtUser.Text = Me == null ? "" : "👤 " + Me.Name + (Me.IsAdmin ? " (Yönetici)" : "");
+            TxtUser.Text = (Me == null ? "" : "👤 " + Me.Name + (Me.IsAdmin ? " (Yönetici)" : ""))
+                + (Db.IsRemote ? "   ·   Terminal → " + LocalConfig.Host : DbServer.IsRunning ? "   ·   Ana kasa (" + DbServer.ClientCount + " terminal)" : "");
             var day = DateTime.ParseExact(Settings.BusinessDay(DateTime.Now), "yyyy-MM-dd", null);
             TxtDay.Text = "İş günü: " + day.ToString("d MMMM dddd", Money.Tr);
             TxtClock.Text = DateTime.Now.ToString("HH:mm");
@@ -1151,6 +1152,7 @@ namespace KasaPos
         private void Window_Closed(object sender, EventArgs e)
         {
             CallerId.Stop();
+            DbServer.Stop();
             Application.Current.Shutdown();
         }
     }

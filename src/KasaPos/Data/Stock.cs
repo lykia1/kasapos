@@ -73,30 +73,16 @@ namespace KasaPos.Data
         public static void Move(long itemId, decimal qty, string reason, string note, string user, long? orderId = null, decimal? unitCost = null)
         {
             var now = DateTime.Now;
-            using (var c = Db.Open())
-            using (var tx = c.BeginTransaction())
+            Db.Tx(t =>
             {
-                decimal cost = unitCost ?? Convert.ToDecimal(ScalarIn(c, tx, "SELECT cost FROM stock_items WHERE id=@id", itemId) ?? 0.0);
-                Db.Exec(c, tx, "INSERT INTO stock_moves(created_at,business_day,stock_item_id,qty,unit_cost,reason,order_id,note,user_name) VALUES(@c,@d,@i,@q,@uc,@r,@o,@n,@u)",
+                decimal cost = unitCost ?? Convert.ToDecimal(t.Scalar("SELECT cost FROM stock_items WHERE id=@id", ("@id", itemId)) ?? 0.0);
+                t.Exec("INSERT INTO stock_moves(created_at,business_day,stock_item_id,qty,unit_cost,reason,order_id,note,user_name) VALUES(@c,@d,@i,@q,@uc,@r,@o,@n,@u)",
                     ("@c", now.ToString(Iso, CultureInfo.InvariantCulture)), ("@d", Settings.BusinessDay(now)), ("@i", itemId),
                     ("@q", (double)qty), ("@uc", cost), ("@r", reason), ("@o", orderId), ("@n", note), ("@u", user));
-                Db.Exec(c, tx, "UPDATE stock_items SET qty=qty+@q WHERE id=@i", ("@q", (double)qty), ("@i", itemId));
+                t.Exec("UPDATE stock_items SET qty=qty+@q WHERE id=@i", ("@q", (double)qty), ("@i", itemId));
                 if (unitCost.HasValue && unitCost.Value > 0)
-                    Db.Exec(c, tx, "UPDATE stock_items SET cost=@uc WHERE id=@i", ("@uc", unitCost.Value), ("@i", itemId));
-                tx.Commit();
-            }
-        }
-
-        private static object ScalarIn(Microsoft.Data.Sqlite.SqliteConnection c, Microsoft.Data.Sqlite.SqliteTransaction tx, string sql, long id)
-        {
-            using (var cmd = c.CreateCommand())
-            {
-                cmd.Transaction = tx;
-                cmd.CommandText = sql;
-                cmd.Parameters.AddWithValue("@id", id);
-                var r = cmd.ExecuteScalar();
-                return r == DBNull.Value ? null : r;
-            }
+                    t.Exec("UPDATE stock_items SET cost=@uc WHERE id=@i", ("@uc", unitCost.Value), ("@i", itemId));
+            });
         }
 
         public static List<RecipeLine> Recipe(long productId) =>
@@ -108,15 +94,14 @@ namespace KasaPos.Data
 
         public static void SaveRecipe(long productId, IEnumerable<RecipeLine> lines)
         {
-            using (var c = Db.Open())
-            using (var tx = c.BeginTransaction())
+            var list = lines.Where(x => x.StockItemId > 0 && x.Qty > 0).GroupBy(x => x.StockItemId).ToList();
+            Db.Tx(t =>
             {
-                Db.Exec(c, tx, "DELETE FROM recipes WHERE product_id=@p", ("@p", productId));
-                foreach (var l in lines.Where(x => x.StockItemId > 0 && x.Qty > 0).GroupBy(x => x.StockItemId))
-                    Db.Exec(c, tx, "INSERT INTO recipes(product_id,stock_item_id,qty) VALUES(@p,@s,@q)",
+                t.Exec("DELETE FROM recipes WHERE product_id=@p", ("@p", productId));
+                foreach (var l in list)
+                    t.Exec("INSERT INTO recipes(product_id,stock_item_id,qty) VALUES(@p,@s,@q)",
                         ("@p", productId), ("@s", l.Key), ("@q", (double)l.Sum(x => x.Qty)));
-                tx.Commit();
-            }
+            });
         }
 
         /// <summary>Ödenen siparişin ürün reçetelerine göre stoktan düşer.</summary>

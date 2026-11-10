@@ -34,5 +34,32 @@
 
         <Button Content="Kurulumu Tamamla" Style="{StaticResource AccentButton}" HorizontalAlignment="Right"
                 Width="220" Margin="3,12,3,0" Click="Finish_Click"/>
+
+        <Border Height="1" Background="{StaticResource Line}" Margin="0,18,0,10"/>
+        <Expander Header="Bu bilgisayar ek bir kasa / terminal mi? Ana kasaya bağlan" FontSize="14">
+            <StackPanel Margin="4,8,4,0">
+                <TextBlock Text="Ana kasa bilgisayarında Ayarlar > Ağ / Çoklu Bilgisayar'da yazan adres ve ağ şifresini gir." TextWrapping="Wrap" Foreground="{StaticResource TextSub}"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Ana kasa adresi" Style="{StaticResource Label}"/>
+                        <TextBox x:Name="TxtHost"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Port" Style="{StaticResource Label}"/>
+                        <TextBox x:Name="TxtPort" Text="8787"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Ağ şifresi" Style="{StaticResource Label}"/>
+                        <TextBox x:Name="TxtKey"/>
+                    </StackPanel>
+                </Grid>
+                <Button Content="Ana Kasaya Bağlan" HorizontalAlignment="Right" Width="220" Click="Connect_Click"/>
+            </StackPanel>
+        </Expander>
     </StackPanel>
 </Window>

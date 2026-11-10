@@ -20,7 +20,7 @@ namespace KasaPos.Data
             c.Open();
             using (var cmd = c.CreateCommand())
             {
-                cmd.CommandText = "PRAGMA foreign_keys=ON;";
+                cmd.CommandText = "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;";
                 cmd.ExecuteNonQuery();
             }
             return c;
@@ -244,103 +244,71 @@ CREATE INDEX IF NOT EXISTS ix_pay_order ON payments(order_id);
                 Exec("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
         }
 
-        private static void AddParams(SqliteCommand cmd, (string, object)[] p)
+        /// <summary>Veritabanı arka ucu: yerel SQLite ya da ağdaki ana kasa.</summary>
+        public static IDbBackend Backend { get; set; } = new LocalBackend();
+        public static bool IsRemote => Backend is RemoteBackend;
+
+        internal static void AddParams(SqliteCommand cmd, (string, object)[] p)
         {
             if (p == null) return;
             foreach (var (name, val) in p)
-            {
-                object v = val ?? DBNull.Value;
-                if (v is decimal d) v = (double)Math.Round(d, 2);
-                if (v is bool b) v = b ? 1 : 0;
-                cmd.Parameters.AddWithValue(name, v);
-            }
+                cmd.Parameters.AddWithValue(name, Normalize(val) ?? DBNull.Value);
         }
 
-        public static int Exec(string sql, params (string, object)[] p)
+        /// <summary>Parametre değerlerini SQLite'ın ve ağ protokolünün anladığı türlere çevirir.</summary>
+        internal static object Normalize(object v)
         {
-            using (var c = Open())
-            using (var cmd = c.CreateCommand())
-            {
-                cmd.CommandText = sql;
-                AddParams(cmd, p);
-                return cmd.ExecuteNonQuery();
-            }
+            if (v == null || v == DBNull.Value) return null;
+            if (v is decimal d) return (double)Math.Round(d, 2);
+            if (v is bool b) return b ? 1L : 0L;
+            if (v is int i) return (long)i;
+            if (v is float f) return (double)f;
+            return v;
         }
 
-        public static int Exec(SqliteConnection c, SqliteTransaction tx, string sql, params (string, object)[] p)
-        {
-            using (var cmd = c.CreateCommand())
-            {
-                cmd.Transaction = tx;
-                cmd.CommandText = sql;
-                AddParams(cmd, p);
-                return cmd.ExecuteNonQuery();
-            }
-        }
+        public static int Exec(string sql, params (string, object)[] p) => Backend.Exec(sql, p);
 
-        public static long Insert(SqliteConnection c, SqliteTransaction tx, string sql, params (string, object)[] p)
-        {
-            using (var cmd = c.CreateCommand())
-            {
-                cmd.Transaction = tx;
-                cmd.CommandText = sql + "; SELECT last_insert_rowid();";
-                AddParams(cmd, p);
-                return Convert.ToInt64(cmd.ExecuteScalar());
-            }
-        }
+        public static object Scalar(string sql, params (string, object)[] p) => Backend.Scalar(sql, p);
 
-        public static object Scalar(string sql, params (string, object)[] p)
-        {
-            using (var c = Open())
-            using (var cmd = c.CreateCommand())
-            {
-                cmd.CommandText = sql;
-                AddParams(cmd, p);
-                var r = cmd.ExecuteScalar();
-                return r == DBNull.Value ? null : r;
-            }
-        }
+        public static List<T> Query<T>(string sql, Func<DbRow, T> map, params (string, object)[] p) =>
+            Backend.Query(sql, p).Select(map).ToList();
 
-        public static List<T> Query<T>(string sql, Func<SqliteDataReader, T> map, params (string, object)[] p)
+        /// <summary>Tek işlem (transaction) içinde çalıştırır; hata olursa hepsi geri alınır.</summary>
+        public static void Tx(Action<IDbTx> work) => Backend.Tx(work);
+
+        /// <summary>Kayıt ekler ve yeni satırın id'sini döner.</summary>
+        public static long Insert(string sql, params (string, object)[] p)
         {
-            var list = new List<T>();
-            using (var c = Open())
-            using (var cmd = c.CreateCommand())
-            {
-                cmd.CommandText = sql;
-                AddParams(cmd, p);
-                using (var r = cmd.ExecuteReader())
-                {
-                    while (r.Read()) list.Add(map(r));
-                }
-            }
-            return list;
+            long id = 0;
+            Tx(t => id = t.Insert(sql, p));
+            return id;
         }
 
         // Okuma yardımcıları
-        public static string S(SqliteDataReader r, string col)
+        public static string S(DbRow r, string col)
         {
             int i = r.GetOrdinal(col);
             return r.IsDBNull(i) ? null : r.GetValue(i).ToString();
         }
 
-        public static long L(SqliteDataReader r, string col)
+        public static long L(DbRow r, string col)
         {
             int i = r.GetOrdinal(col);
             return r.IsDBNull(i) ? 0 : Convert.ToInt64(r.GetValue(i));
         }
 
-        public static decimal D(SqliteDataReader r, string col)
+        public static decimal D(DbRow r, string col)
         {
             int i = r.GetOrdinal(col);
             return r.IsDBNull(i) ? 0m : Math.Round(Convert.ToDecimal(r.GetValue(i)), 2);
         }
 
-        public static bool B(SqliteDataReader r, string col) => L(r, col) != 0;
+        public static bool B(DbRow r, string col) => L(r, col) != 0;
 
         /// <summary>Uygulama her açıldığında günlük yedek alır, son 30 yedeği tutar.</summary>
         public static string Backup(bool force = false)
         {
+            if (IsRemote) return null; // yedeği ana kasa alır
             try
             {
                 Directory.CreateDirectory(BackupDir);
@@ -371,6 +339,8 @@ CREATE INDEX IF NOT EXISTS ix_pay_order ON payments(order_id);
     {
         public static string Get(string key, string def = "")
         {
+            string local;
+            if (LocalConfig.IsLocalKey(key) && LocalConfig.TryGet(key, out local)) return local;
             var v = Db.Scalar("SELECT value FROM settings WHERE key=@k", ("@k", key));
             return v == null ? def : v.ToString();
         }
@@ -385,6 +355,11 @@ CREATE INDEX IF NOT EXISTS ix_pay_order ON payments(order_id);
 
         public static void Set(string key, string value)
         {
+            if (LocalConfig.IsLocalKey(key))
+            {
+                LocalConfig.Set(key, value ?? "");
+                return;
+            }
             Db.Exec("INSERT INTO settings(key,value) VALUES(@k,@v) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                 ("@k", key), ("@v", value ?? ""));
         }

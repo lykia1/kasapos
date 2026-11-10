@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Windows;
 using KasaPos.Data;
@@ -39,6 +40,34 @@ namespace KasaPos
                 MenuRepo.SeedSampleMenu();
 
             DialogResult = true;
+        }
+
+        private void Connect_Click(object sender, RoutedEventArgs e)
+        {
+            int port;
+            if (!int.TryParse(TxtPort.Text.Trim(), out port) || port <= 0) port = 8787;
+            try
+            {
+                var rb = new RemoteBackend(TxtHost.Text.Trim(), port, TxtKey.Text.Trim());
+                rb.Ping();
+                var users = Convert.ToInt64(rb.Scalar("SELECT COUNT(*) FROM users", null) ?? 0L);
+                if (users == 0)
+                {
+                    MessageBox.Show("Ana kasaya bağlanıldı ama orada henüz kurulum yapılmamış. Önce ana kasada kurulumu tamamla.", Title);
+                    return;
+                }
+                LocalConfig.Set("net_mode", "client");
+                LocalConfig.Set("net_host", TxtHost.Text.Trim());
+                LocalConfig.Set("net_port", port.ToString());
+                LocalConfig.Set("net_key", TxtKey.Text.Trim());
+                Db.Backend = rb;
+                MessageBox.Show("Ana kasaya bağlanıldı. Ana kasadaki kullanıcı şifrenle giriş yapabilirsin.", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                DialogResult = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Bağlanılamadı: " + ex.Message, Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
     }
 }

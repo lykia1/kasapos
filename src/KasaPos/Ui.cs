@@ -59,6 +59,16 @@ namespace KasaPos
             try
             {
                 var path = Path.Combine(Db.ImageDir, fileName);
+                if (!File.Exists(path) && Db.Backend is RemoteBackend rb)
+                {
+                    // Terminalde görsel yoksa ana kasadan indir ve sakla
+                    var bytes = rb.GetFile(fileName);
+                    if (bytes != null)
+                    {
+                        Directory.CreateDirectory(Db.ImageDir);
+                        File.WriteAllBytes(path, bytes);
+                    }
+                }
                 if (!File.Exists(path)) return null;
                 var bi = new BitmapImage();
                 bi.BeginInit();
@@ -82,6 +92,7 @@ namespace KasaPos
             Directory.CreateDirectory(Db.ImageDir);
             var name = Guid.NewGuid().ToString("N") + Path.GetExtension(sourcePath).ToLowerInvariant();
             File.Copy(sourcePath, Path.Combine(Db.ImageDir, name), true);
+            if (Db.Backend is RemoteBackend rb) rb.PutFile(name, File.ReadAllBytes(sourcePath));
             return name;
         }
     }
