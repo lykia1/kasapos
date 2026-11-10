@@ -44,7 +44,14 @@ namespace KasaPos.Data
 
         private static string ReadText(string path)
         {
-            var bytes = File.ReadAllBytes(path);
+            // Dosya Excel'de açık olsa bile okuyabilmek için paylaşımlı aç
+            byte[] bytes;
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+            using (var ms = new MemoryStream())
+            {
+                fs.CopyTo(ms);
+                bytes = ms.ToArray();
+            }
             // UTF-8 değilse Türkçe Windows kodlamasıyla (Excel'in eski CSV'leri) oku
             try
             {
@@ -83,6 +90,7 @@ namespace KasaPos.Data
                 if (!Money.TryParse(f[2], out pm)) { res.Skipped++; continue; } // başlık satırı ya da hatalı satır
                 if (f.Count < 4 || !Money.TryParse(f[3], out pg)) pg = pm;
                 if (f.Count < 5 || !Money.TryParse(f[4], out pp)) pp = pm;
+                string desc = f.Count >= 6 ? f[5].Trim() : null;
                 if (catName == "" || name == "") { res.Skipped++; continue; }
 
                 var cat = cats.FirstOrDefault(c => string.Equals(c.Name, catName, StringComparison.CurrentCultureIgnoreCase));
@@ -109,6 +117,7 @@ namespace KasaPos.Data
                 p.PriceMasa = pm;
                 p.PriceGelAl = pg;
                 p.PricePaket = pp;
+                if (desc != null) p.Description = desc;
                 p.Active = true;
                 MenuRepo.SaveProduct(p);
                 if (p.Id == 0)
@@ -130,14 +139,14 @@ namespace KasaPos.Data
         {
             var cats = MenuRepo.Categories(false).ToDictionary(c => c.Id, c => c.Name);
             var sb = new StringBuilder();
-            sb.AppendLine("Kategori;Ürün;Masa Fiyatı;Gel Al Fiyatı;Paket Fiyatı");
+            sb.AppendLine("Kategori;Ürün;Masa Fiyatı;Gel Al Fiyatı;Paket Fiyatı;Açıklama");
             int n = 0;
             foreach (var p in MenuRepo.Products(true))
             {
                 string cn;
                 if (!cats.TryGetValue(p.CategoryId, out cn)) continue;
                 sb.AppendLine(Q(cn) + ";" + Q(p.Name) + ";" + Money.Fmt(p.PriceMasa).Replace(".", "") + ";" +
-                              Money.Fmt(p.PriceGelAl).Replace(".", "") + ";" + Money.Fmt(p.PricePaket).Replace(".", ""));
+                              Money.Fmt(p.PriceGelAl).Replace(".", "") + ";" + Money.Fmt(p.PricePaket).Replace(".", "") + ";" + Q(p.Description));
                 n++;
             }
             File.WriteAllText(path, sb.ToString(), new UTF8Encoding(true));

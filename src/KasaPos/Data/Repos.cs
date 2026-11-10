@@ -62,7 +62,8 @@ namespace KasaPos.Data
                 Sort = (int)Db.L(r, "sort"),
                 Active = Db.B(r, "active"),
                 Color = Db.S(r, "color"),
-                Image = Db.S(r, "image")
+                Image = Db.S(r, "image"),
+                Description = Db.S(r, "description")
             }, ("@c", categoryId ?? 0));
         }
 
@@ -81,11 +82,11 @@ namespace KasaPos.Data
         public static void SaveProduct(Product p)
         {
             if (p.Id == 0)
-                Db.Exec("INSERT INTO products(category_id,name,price_masa,price_gelal,price_paket,sort,active,color,image) VALUES(@c,@n,@pm,@pg,@pp,@s,@a,@col,@img)",
-                    ("@c", p.CategoryId), ("@n", p.Name), ("@pm", p.PriceMasa), ("@pg", p.PriceGelAl), ("@pp", p.PricePaket), ("@s", p.Sort), ("@a", p.Active), ("@col", p.Color), ("@img", p.Image));
+                Db.Exec("INSERT INTO products(category_id,name,price_masa,price_gelal,price_paket,sort,active,color,image,description) VALUES(@c,@n,@pm,@pg,@pp,@s,@a,@col,@img,@d)",
+                    ("@c", p.CategoryId), ("@n", p.Name), ("@pm", p.PriceMasa), ("@pg", p.PriceGelAl), ("@pp", p.PricePaket), ("@s", p.Sort), ("@a", p.Active), ("@col", p.Color), ("@img", p.Image), ("@d", p.Description));
             else
-                Db.Exec("UPDATE products SET category_id=@c,name=@n,price_masa=@pm,price_gelal=@pg,price_paket=@pp,sort=@s,active=@a,color=@col,image=@img WHERE id=@id",
-                    ("@c", p.CategoryId), ("@n", p.Name), ("@pm", p.PriceMasa), ("@pg", p.PriceGelAl), ("@pp", p.PricePaket), ("@s", p.Sort), ("@a", p.Active), ("@col", p.Color), ("@img", p.Image), ("@id", p.Id));
+                Db.Exec("UPDATE products SET category_id=@c,name=@n,price_masa=@pm,price_gelal=@pg,price_paket=@pp,sort=@s,active=@a,color=@col,image=@img,description=@d WHERE id=@id",
+                    ("@c", p.CategoryId), ("@n", p.Name), ("@pm", p.PriceMasa), ("@pg", p.PriceGelAl), ("@pp", p.PricePaket), ("@s", p.Sort), ("@a", p.Active), ("@col", p.Color), ("@img", p.Image), ("@d", p.Description), ("@id", p.Id));
         }
 
         /// <summary>İlk kurulumda isteğe bağlı örnek döner menüsü.</summary>

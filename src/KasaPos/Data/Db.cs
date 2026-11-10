@@ -199,6 +199,7 @@ CREATE INDEX IF NOT EXISTS ix_pay_order ON payments(order_id);
   sort INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY(product_id, group_id))");
             EnsureColumn("order_items", "options", "TEXT");
+            EnsureColumn("products", "description", "TEXT");
             EnsureColumn("order_items", "options_price", "REAL NOT NULL DEFAULT 0");
             Exec(@"CREATE TABLE IF NOT EXISTS cash_sessions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -63,6 +63,7 @@ namespace KasaPos.Data
         public bool Active { get; set; } = true;
         public string Color { get; set; }
         public string Image { get; set; }
+        public string Description { get; set; }
         public bool HasImage => !string.IsNullOrEmpty(Image);
 
         public decimal PriceFor(string orderType)

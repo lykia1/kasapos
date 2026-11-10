@@ -186,7 +186,8 @@ namespace KasaPos
                     Padding = new Thickness(8),
                     Background = fill,
                     Foreground = Brushes.White,
-                    BorderThickness = new Thickness(0)
+                    BorderThickness = new Thickness(0),
+                    ToolTip = string.IsNullOrWhiteSpace(p.Description) ? null : p.Name + "\n" + p.Description
                 };
                 b.Click += (s, e) => AddProduct((Product)((Button)s).Tag);
                 PnlProducts.Children.Add(b);

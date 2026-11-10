@@ -55,6 +55,7 @@
             <DataGrid x:Name="GridProducts" CanUserAddRows="True" CanUserDeleteRows="False">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Ürün adı" Binding="{Binding Name}" Width="*"/>
+                    <DataGridTextColumn Header="Açıklama" Binding="{Binding Description}" Width="1.4*"/>
                     <DataGridTextColumn Header="Masa ₺" Binding="{Binding PriceMasa, StringFormat=N2}" Width="110"/>
                     <DataGridTextColumn Header="Al Götür ₺" Binding="{Binding PriceGelAl, StringFormat=N2}" Width="110"/>
                     <DataGridTextColumn Header="Paket ₺" Binding="{Binding PricePaket, StringFormat=N2}" Width="110"/>
