@@ -29,10 +29,12 @@ namespace KasaPos
             ReloadMenu();
             NewOrder(OrderTypes.GelAl);
             RefreshOpenOrders();
+            ShowHome();
             _timer.Tick += (s, e) =>
             {
                 UpdateHeader();
-                if (ViewTables.Visibility == Visibility.Visible) ShowTables();
+                if (ViewSale.Visibility == Visibility.Visible && ViewTables.Visibility == Visibility.Visible) ShowTables();
+                if (ViewHome.Visibility == Visibility.Visible) RefreshOpenOrders();
             };
             _timer.Start();
         }
@@ -56,7 +58,7 @@ namespace KasaPos
             var biz = Settings.Get("biz_name", AppInfo.Name);
             TxtBiz.Text = biz;
             TxtLogo.Text = string.IsNullOrEmpty(biz) ? "K" : biz.Substring(0, 1).ToUpper(Money.Tr);
-            TxtUser.Text = Me == null ? "" : "👤 " + Me.Name;
+            TxtUser.Text = Me == null ? "" : "👤 " + Me.Name + (Me.IsAdmin ? " (Yönetici)" : "");
             var day = DateTime.ParseExact(Settings.BusinessDay(DateTime.Now), "yyyy-MM-dd", null);
             TxtDay.Text = "İş günü: " + day.ToString("d MMMM dddd", Money.Tr);
             TxtClock.Text = DateTime.Now.ToString("HH:mm");
@@ -84,15 +86,17 @@ namespace KasaPos
                 var color = Palette.Brush(c.Color, Res("Accent"));
                 var b = new Button
                 {
-                    Content = c.Name,
+                    Content = new TextBlock { Text = c.Name, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center },
                     Tag = c.Id,
-                    MinWidth = 110,
-                    MinHeight = 46,
+                    MinHeight = 62,
+                    Margin = new Thickness(0, 0, 0, 6),
+                    FontSize = 16,
                     FontWeight = FontWeights.SemiBold,
-                    Background = sel ? color : Res("Surface"),
-                    Foreground = sel ? Brushes.White : Res("TextMain"),
-                    BorderBrush = color,
-                    BorderThickness = sel ? new Thickness(1) : new Thickness(1, 1, 1, 4)
+                    Background = color,
+                    Foreground = Brushes.White,
+                    BorderBrush = sel ? Brushes.White : color,
+                    BorderThickness = new Thickness(sel ? 4 : 0),
+                    Opacity = sel || searching ? 1.0 : 0.82
                 };
                 b.Click += (s, e) =>
                 {
@@ -100,6 +104,7 @@ namespace KasaPos
                     if (TxtSearch.Text.Length > 0) TxtSearch.Text = "";
                     BuildCategories();
                     ShowProducts();
+                    ShowView(false);
                 };
                 PnlCategories.Children.Add(b);
             }
@@ -118,7 +123,7 @@ namespace KasaPos
             {
                 var cat = _categories.FirstOrDefault(c => c.Id == p.CategoryId);
                 string colorName = !string.IsNullOrEmpty(p.Color) ? p.Color : cat?.Color;
-                var stripe = Palette.Brush(colorName, Res("Line"));
+                var fill = Palette.Brush(colorName, new SolidColorBrush(Color.FromRgb(0x49, 0x50, 0x57)));
 
                 var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
                 var img = p.HasImage ? ImageCache.Get(p.Image) : null;
@@ -129,29 +134,30 @@ namespace KasaPos
                     Text = p.Name,
                     TextWrapping = TextWrapping.Wrap,
                     TextAlignment = TextAlignment.Center,
-                    FontSize = 15,
+                    FontSize = 16,
                     FontWeight = FontWeights.SemiBold,
-                    Foreground = Res("TextMain")
+                    Foreground = Brushes.White
                 });
                 sp.Children.Add(new TextBlock
                 {
                     Text = Money.FmtTl(p.PriceFor(type)),
                     TextAlignment = TextAlignment.Center,
-                    FontSize = 14,
-                    FontWeight = FontWeights.SemiBold,
-                    Foreground = Res("AccentDark"),
-                    Margin = new Thickness(0, 4, 0, 0)
+                    FontSize = 15,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xF3, 0xBF)),
+                    Margin = new Thickness(0, 6, 0, 0)
                 });
                 var b = new Button
                 {
                     Content = sp,
                     Tag = p,
-                    Width = 160,
-                    Height = img != null ? 160 : 100,
+                    Width = 156,
+                    Height = img != null ? 160 : 104,
                     Margin = new Thickness(5),
                     Padding = new Thickness(8),
-                    BorderBrush = stripe,
-                    BorderThickness = new Thickness(1, 5, 1, 1)
+                    Background = fill,
+                    Foreground = Brushes.White,
+                    BorderThickness = new Thickness(0)
                 };
                 b.Click += (s, e) => AddProduct((Product)((Button)s).Tag);
                 PnlProducts.Children.Add(b);
@@ -230,30 +236,30 @@ namespace KasaPos
                 var o = open.FirstOrDefault(x => string.Equals(x.TableNo, t.Name, StringComparison.OrdinalIgnoreCase));
                 bool busy = o != null;
                 var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-                sp.Children.Add(new TextBlock { Text = t.Name, FontSize = 22, FontWeight = FontWeights.Bold, TextAlignment = TextAlignment.Center, Foreground = Res("TextMain") });
+                sp.Children.Add(new TextBlock { Text = t.Name, FontSize = 24, FontWeight = FontWeights.Bold, TextAlignment = TextAlignment.Center, Foreground = Brushes.White });
                 if (busy)
                 {
                     int mins = (int)Math.Max(0, (DateTime.Now - o.CreatedAt).TotalMinutes);
-                    sp.Children.Add(new TextBlock { Text = Money.FmtTl(o.Total), FontSize = 14, FontWeight = FontWeights.SemiBold, TextAlignment = TextAlignment.Center, Foreground = Res("Busy") });
-                    sp.Children.Add(new TextBlock { Text = mins < 60 ? mins + " dk" : (mins / 60) + " sa " + (mins % 60) + " dk", FontSize = 12, TextAlignment = TextAlignment.Center, Foreground = Res("TextSub") });
+                    sp.Children.Add(new TextBlock { Text = Money.FmtTl(o.Total), FontSize = 15, FontWeight = FontWeights.Bold, TextAlignment = TextAlignment.Center, Foreground = Brushes.White });
+                    sp.Children.Add(new TextBlock { Text = mins < 60 ? mins + " dk" : (mins / 60) + " sa " + (mins % 60) + " dk", FontSize = 12, TextAlignment = TextAlignment.Center, Foreground = Brushes.White, Opacity = 0.9 });
                 }
                 else
                 {
-                    sp.Children.Add(new TextBlock { Text = "Boş", FontSize = 13, TextAlignment = TextAlignment.Center, Foreground = Res("Ok") });
+                    sp.Children.Add(new TextBlock { Text = "Boş", FontSize = 13, TextAlignment = TextAlignment.Center, Foreground = Brushes.White, Opacity = 0.9 });
                 }
                 if (areas.Count > 1 && _selectedArea == "")
-                    sp.Children.Add(new TextBlock { Text = t.Area, FontSize = 11, TextAlignment = TextAlignment.Center, Foreground = Res("TextSub") });
+                    sp.Children.Add(new TextBlock { Text = t.Area, FontSize = 11, TextAlignment = TextAlignment.Center, Foreground = Brushes.White, Opacity = 0.8 });
 
                 var b = new Button
                 {
                     Content = sp,
                     Tag = t.Name,
-                    Width = 132,
-                    Height = 108,
+                    Width = 136,
+                    Height = 112,
                     Margin = new Thickness(6),
-                    Background = busy ? Res("BusySoft") : Res("OkSoft"),
-                    BorderBrush = busy ? Res("Busy") : Res("Ok"),
-                    BorderThickness = new Thickness(2)
+                    Background = busy ? new SolidColorBrush(Color.FromRgb(0xE8, 0x59, 0x0C)) : new SolidColorBrush(Color.FromRgb(0x2F, 0x9E, 0x44)),
+                    Foreground = Brushes.White,
+                    BorderThickness = new Thickness(0)
                 };
                 b.Click += (s, e) => OpenTable((string)((Button)s).Tag);
                 PnlTables.Children.Add(b);
@@ -414,6 +420,8 @@ namespace KasaPos
                 title = _order.Id == 0 ? "Yeni Sipariş" : "Sipariş #" + _order.Id;
             TxtOrderTitle.Text = title;
             TxtTypeBadge.Text = OrderTypes.Label(_order.OrderType) + (_order.Id > 0 ? "  #" + _order.Id : "");
+            BdType.Background = new SolidColorBrush(_order.OrderType == OrderTypes.Masa ? Color.FromRgb(0x2F, 0x9E, 0x44)
+                : _order.OrderType == OrderTypes.Paket ? Color.FromRgb(0x19, 0x71, 0xC2) : Color.FromRgb(0xF7, 0x67, 0x07));
             TxtOrderNote.Text = string.IsNullOrWhiteSpace(_order.Note) ? "" : "Not: " + _order.Note;
         }
 
@@ -625,9 +633,34 @@ namespace KasaPos
             if (!CollectAndValidate()) return;
             var dlg = new PaymentWindow(_order.Total) { Owner = this };
             if (dlg.ShowDialog() != true) return;
+            CompletePayment(dlg.Payments, dlg.Change, dlg.PrintReceipt);
+        }
 
+        /// <summary>Tek dokunuşla tamamını nakit veya kartla öder.</summary>
+        private void QuickPay(bool cash)
+        {
+            if (!CollectAndValidate()) return;
+            var types = PaymentRepo.Types();
+            PaymentType t = cash
+                ? types.FirstOrDefault(x => x.IsCash)
+                : types.FirstOrDefault(x => !x.IsCash && (x.Name ?? "").ToLower(Money.Tr).Contains("kart")) ?? types.FirstOrDefault(x => !x.IsCash);
+            if (t == null)
+            {
+                MessageBox.Show("Uygun ödeme türü bulunamadı. Ayarlar > Ödeme Türleri'ni kontrol et.", Title);
+                return;
+            }
+            var pays = new List<Payment>();
+            if (_order.Total > 0) pays.Add(new Payment { PaymentTypeId = t.Id, Name = t.Name, Amount = _order.Total });
+            CompletePayment(pays, 0, false);
+        }
+
+        private void BtnPayCash_Click(object sender, RoutedEventArgs e) => QuickPay(true);
+        private void BtnPayCard_Click(object sender, RoutedEventArgs e) => QuickPay(false);
+
+        private void CompletePayment(List<Payment> payments, decimal change, bool printReceipt)
+        {
             string type = _order.OrderType;
-            _order.Payments = dlg.Payments;
+            _order.Payments = payments;
             _order.Status = "PAID";
             _order.PaidAt = DateTime.Now;
             _order.BusinessDay = Settings.BusinessDay(_order.PaidAt.Value);
@@ -635,9 +668,9 @@ namespace KasaPos
             SendToKitchenIfEnabled();
             OrderRepo.Save(_order);
 
-            if (Settings.GetBool("receipt_auto", false) || dlg.PrintReceipt)
+            if (Settings.GetBool("receipt_auto", false) || printReceipt)
             {
-                var err = Printer.PrintReceipt(_order, dlg.Change);
+                var err = Printer.PrintReceipt(_order, change);
                 if (err != null) MessageBox.Show("Fiş yazdırılamadı: " + err, Title);
             }
             NewOrder(type);
@@ -674,6 +707,7 @@ namespace KasaPos
             LstOpen.SelectedItem = null;
             TxtOpenCount.Text = list.Count + " adet";
             _loading = false;
+            RefreshStats(list);
             if (ViewTables.Visibility == Visibility.Visible) ShowTables();
         }
 
@@ -691,7 +725,72 @@ namespace KasaPos
             }
             _order = OrderRepo.Get(o.Id);
             LoadOrderIntoUi();
+            ShowSale();
             ShowView(false);
+        }
+
+        // ================= Ana ekran =================
+
+        private void ShowHome()
+        {
+            ViewHome.Visibility = Visibility.Visible;
+            ViewSale.Visibility = Visibility.Collapsed;
+            BtnHome.Visibility = Visibility.Collapsed;
+            RefreshOpenOrders();
+        }
+
+        private void ShowSale()
+        {
+            ViewHome.Visibility = Visibility.Collapsed;
+            ViewSale.Visibility = Visibility.Visible;
+            BtnHome.Visibility = Visibility.Visible;
+        }
+
+        private void RefreshStats(List<Order> open)
+        {
+            try
+            {
+                var day = Settings.BusinessDay(DateTime.Now);
+                var sum = Db.Scalar("SELECT SUM(total) FROM orders WHERE status='PAID' AND business_day=@d", ("@d", day));
+                var cnt = Db.Scalar("SELECT COUNT(*) FROM orders WHERE status='PAID' AND business_day=@d", ("@d", day));
+                TxtStatSales.Text = Money.FmtTl(sum == null ? 0m : Math.Round(Convert.ToDecimal(sum), 2));
+                TxtStatCount.Text = cnt == null ? "0" : cnt.ToString();
+                TxtStatTables.Text = open.Count(o => o.OrderType == OrderTypes.Masa).ToString();
+                TxtStatPaket.Text = open.Count(o => o.OrderType == OrderTypes.Paket && o.DispatchedAt.HasValue).ToString();
+            }
+            catch { }
+        }
+
+        private void BtnHome_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ConfirmLeaveUnsaved()) return;
+            NewOrder(_order.OrderType);
+            ShowHome();
+        }
+
+        private void HomeMasa_Click(object sender, RoutedEventArgs e)
+        {
+            NewOrder(OrderTypes.Masa);
+            ShowSale();
+        }
+
+        private void HomePaket_Click(object sender, RoutedEventArgs e)
+        {
+            NewOrder(OrderTypes.Paket);
+            ShowSale();
+            TxtPhone.Focus();
+        }
+
+        private void HomeGelAl_Click(object sender, RoutedEventArgs e)
+        {
+            NewOrder(OrderTypes.GelAl);
+            ShowSale();
+        }
+
+        private void BtnExit_Click(object sender, RoutedEventArgs e)
+        {
+            if (MessageBox.Show("Programdan çıkılsın mı?", Title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                Application.Current.Shutdown();
         }
 
         // ================= Masa taşı / birleştir / böl / kurye =================
@@ -881,6 +980,7 @@ namespace KasaPos
                 App.CurrentUser = login.User;
                 ApplyUser();
                 if (_order.Id == 0 && _order.Items.Count == 0) NewOrder(_order.OrderType);
+                ShowHome();
                 Show();
             }
             else

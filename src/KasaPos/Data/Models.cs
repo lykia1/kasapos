@@ -16,7 +16,7 @@ namespace KasaPos.Data
             {
                 case Masa: return "Masa";
                 case Paket: return "Paket";
-                default: return "Al Götür";
+                default: return "Gel Al";
             }
         }
     }
@@ -169,7 +169,7 @@ namespace KasaPos.Data
                 if (OrderType == OrderTypes.Masa) head = "Masa " + TableNo;
                 else if (OrderType == OrderTypes.Paket)
                     head = "Paket: " + (string.IsNullOrWhiteSpace(CustomerName) ? CustomerPhone : CustomerName);
-                else head = "Al Götür #" + Id;
+                else head = "Gel Al #" + Id;
                 string line = head + "\n" + Money.FmtTl(Total) + "  ·  " + CreatedAt.ToString("HH:mm");
                 if (!string.IsNullOrEmpty(CourierName) && DispatchedAt.HasValue)
                     line += "\n🛵 " + CourierName + " · " + (int)Math.Max(0, (DateTime.Now - DispatchedAt.Value).TotalMinutes) + " dk";

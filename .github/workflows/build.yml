@@ -26,23 +26,23 @@ jobs:
           dotnet publish src/KasaPos/KasaPos.csproj -c Release -r win-x64 --self-contained true \
             -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
             -p:EnableCompressionInSingleFile=true -p:DebugType=none \
-            -p:Version=0.3.${{ github.run_number }} -o out 2>&1 | tee build.log
+            -p:Version=0.4.${{ github.run_number }} -o out 2>&1 | tee build.log
 
       - name: Paketle
         shell: pwsh
         run: |
-          Compress-Archive -Path out/KasaPOS.exe -DestinationPath KasaPOS-v0.3.${{ github.run_number }}.zip
+          Compress-Archive -Path out/KasaPOS.exe -DestinationPath KasaPOS-v0.4.${{ github.run_number }}.zip
 
       - name: Sürüm yayınla
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.3.${{ github.run_number }}
-          name: KasaPOS v0.3.${{ github.run_number }}
+          tag_name: v0.4.${{ github.run_number }}
+          name: KasaPOS v0.4.${{ github.run_number }}
           body: |
             Otomatik derleme. Kurulum: zip içindeki KasaPOS.exe'yi masaüstüne çıkar ve çalıştır.
             Windows "bilgisayarınız korundu" uyarısı verirse "Ek bilgi" > "Yine de çalıştır".
           files: |
-            KasaPOS-v0.3.${{ github.run_number }}.zip
+            KasaPOS-v0.4.${{ github.run_number }}.zip
             out/KasaPOS.exe
 
       - name: Derleme kaydını ci-log dalına yaz
