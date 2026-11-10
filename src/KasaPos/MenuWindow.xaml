@@ -1,0 +1,59 @@
+<Window x:Class="KasaPos.MenuWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:KasaPos"
+        Title="Menü Yönetimi" Width="1100" Height="680" WindowStartupLocation="CenterOwner"
+        FontFamily="Segoe UI" Background="{StaticResource PanelBg}">
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="280"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <DockPanel>
+            <TextBlock DockPanel.Dock="Top" Text="Kategoriler" Style="{StaticResource H1}"/>
+            <StackPanel DockPanel.Dock="Bottom">
+                <UniformGrid Columns="2">
+                    <Button Content="+ Ekle" Click="CatAdd_Click"/>
+                    <Button Content="Adını Değiştir" Click="CatRename_Click"/>
+                    <Button Content="▲ Yukarı" Click="CatUp_Click"/>
+                    <Button Content="▼ Aşağı" Click="CatDown_Click"/>
+                </UniformGrid>
+                <Button Content="Kategoriyi Gizle / Göster" Click="CatToggle_Click"/>
+            </StackPanel>
+            <ListBox x:Name="LstCats" FontSize="16" SelectionChanged="LstCats_SelectionChanged" Margin="3">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Margin="4,6">
+                            <Run Text="{Binding Name, Mode=OneWay}"/>
+                            <Run Text="{Binding Active, Mode=OneWay, Converter={x:Static local:HiddenTagConverter.Instance}}" Foreground="Gray"/>
+                        </TextBlock>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+
+        <DockPanel Grid.Column="1" Margin="10,0,0,0">
+            <StackPanel DockPanel.Dock="Top">
+                <TextBlock x:Name="TxtCatTitle" Style="{StaticResource H1}"/>
+                <TextBlock Text="Ürünleri tabloda düzenle. Yeni ürün için en alttaki boş satıra yaz. Satıştan kaldırmak için 'Satışta' kutusunu kaldır (geçmiş raporlar bozulmaz)."
+                           TextWrapping="Wrap" Foreground="#52606D" Margin="4,0,4,6"/>
+                <CheckBox x:Name="ChkSamePrice" Content="Masa ve Al Götür fiyatı aynı olsun (Masa fiyatını yazman yeterli)" IsChecked="True"/>
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Kapat" Width="120" IsCancel="True"/>
+                <Button Content="Kaydet" Width="160" Style="{StaticResource AccentButton}" Click="Save_Click"/>
+            </StackPanel>
+            <DataGrid x:Name="GridProducts" CanUserAddRows="True" CanUserDeleteRows="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Ürün adı" Binding="{Binding Name}" Width="*"/>
+                    <DataGridTextColumn Header="Masa ₺" Binding="{Binding PriceMasa, StringFormat=N2}" Width="110"/>
+                    <DataGridTextColumn Header="Al Götür ₺" Binding="{Binding PriceGelAl, StringFormat=N2}" Width="110"/>
+                    <DataGridTextColumn Header="Paket ₺" Binding="{Binding PricePaket, StringFormat=N2}" Width="110"/>
+                    <DataGridTextColumn Header="Sıra" Binding="{Binding Sort}" Width="60"/>
+                    <DataGridCheckBoxColumn Header="Satışta" Binding="{Binding Active}" Width="70"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+    </Grid>
+</Window>

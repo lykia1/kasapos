@@ -1,0 +1,38 @@
+<Window x:Class="KasaPos.SetupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="İlk Kurulum" Width="560" SizeToContent="Height" WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize" FontFamily="Segoe UI" Background="{StaticResource PanelBg}">
+    <StackPanel Margin="20">
+        <TextBlock x:Name="TxtTitle" Style="{StaticResource H1}"/>
+        <TextBlock Text="Programı kullanmaya başlamak için işletme bilgilerini ve yönetici hesabını gir. Hepsi sonradan Ayarlar'dan değiştirilebilir."
+                   TextWrapping="Wrap" Margin="4,0,4,10" Foreground="#52606D"/>
+
+        <TextBlock Text="İşletme adı (fişte görünür) *" Style="{StaticResource Label}"/>
+        <TextBox x:Name="TxtBiz"/>
+        <TextBlock Text="Telefon" Style="{StaticResource Label}"/>
+        <TextBox x:Name="TxtPhone"/>
+        <TextBlock Text="Adres" Style="{StaticResource Label}"/>
+        <TextBox x:Name="TxtAddress" Height="60" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"/>
+
+        <Grid Margin="0,6,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Yönetici adı *" Style="{StaticResource Label}"/>
+                <TextBox x:Name="TxtAdmin"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1">
+                <TextBlock Text="Giriş şifresi (PIN, en az 4 rakam) *" Style="{StaticResource Label}"/>
+                <PasswordBox x:Name="TxtPin"/>
+            </StackPanel>
+        </Grid>
+
+        <CheckBox x:Name="ChkSample" Content="Örnek döner menüsünü yükle (fiyatları sonra düzenlersin)" IsChecked="True" Margin="3,12,3,6"/>
+
+        <Button Content="Kurulumu Tamamla" Style="{StaticResource AccentButton}" HorizontalAlignment="Right"
+                Width="220" Margin="3,12,3,0" Click="Finish_Click"/>
+    </StackPanel>
+</Window>

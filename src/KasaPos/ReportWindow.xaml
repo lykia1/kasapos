@@ -1,0 +1,26 @@
+<Window x:Class="KasaPos.ReportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Raporlar" Width="760" Height="720" WindowStartupLocation="CenterOwner"
+        FontFamily="Segoe UI" Background="{StaticResource PanelBg}">
+    <DockPanel Margin="12">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+            <TextBlock Text="Başlangıç:" FontSize="15" VerticalAlignment="Center" Margin="4,0"/>
+            <DatePicker x:Name="DpFrom" FontSize="15" Width="150" VerticalContentAlignment="Center"/>
+            <TextBlock Text="Bitiş:" FontSize="15" VerticalAlignment="Center" Margin="12,0,4,0"/>
+            <DatePicker x:Name="DpTo" FontSize="15" Width="150" VerticalContentAlignment="Center"/>
+            <Button Content="Göster" Style="{StaticResource AccentButton}" Width="110" Click="Show_Click"/>
+            <Button Content="Bugün" Click="Today_Click"/>
+            <Button Content="Dün" Click="Yesterday_Click"/>
+        </StackPanel>
+        <TextBlock DockPanel.Dock="Top" Text="Tarihler iş gününe göredir (kapanış saatinden önceki satışlar bir önceki güne sayılır)."
+                   Foreground="#52606D" Margin="4,6"/>
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Yazdır" Width="140" Click="Print_Click"/>
+            <Button Content="Kapat" Width="120" IsCancel="True"/>
+        </StackPanel>
+        <TextBox x:Name="TxtReport" FontFamily="Consolas" FontSize="14" IsReadOnly="True"
+                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                 VerticalContentAlignment="Top" Padding="10"/>
+    </DockPanel>
+</Window>

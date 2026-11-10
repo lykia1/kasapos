@@ -1,0 +1,104 @@
+<Window x:Class="KasaPos.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Ayarlar" Width="820" Height="640" WindowStartupLocation="CenterOwner"
+        FontFamily="Segoe UI" Background="{StaticResource PanelBg}">
+    <DockPanel Margin="12">
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Vazgeç" Width="120" IsCancel="True"/>
+            <Button Content="Kaydet" Width="160" Style="{StaticResource AccentButton}" Click="Save_Click"/>
+        </StackPanel>
+        <TabControl FontSize="15">
+            <TabItem Header="İşletme">
+                <StackPanel Margin="10">
+                    <TextBlock Text="İşletme adı" Style="{StaticResource Label}"/>
+                    <TextBox x:Name="TxtBiz"/>
+                    <TextBlock Text="Telefon" Style="{StaticResource Label}"/>
+                    <TextBox x:Name="TxtPhone"/>
+                    <TextBlock Text="Adres" Style="{StaticResource Label}"/>
+                    <TextBox x:Name="TxtAddress" Height="60" TextWrapping="Wrap" AcceptsReturn="True" VerticalContentAlignment="Top"/>
+                    <TextBlock Text="Fiş alt yazısı" Style="{StaticResource Label}"/>
+                    <TextBox x:Name="TxtFooter"/>
+                    <TextBlock Text="İş günü kapanış saati (bu saatten önceki satışlar bir önceki güne yazılır)" Style="{StaticResource Label}"/>
+                    <ComboBox x:Name="CmbCutoff" Width="120" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Yazıcılar">
+                <StackPanel Margin="10">
+                    <TextBlock Text="Fiş / adisyon yazıcısı" Style="{StaticResource Label}"/>
+                    <ComboBox x:Name="CmbReceipt"/>
+                    <TextBlock Text="Mutfak yazıcısı (boş bırakılırsa fiş yazıcısı kullanılır)" Style="{StaticResource Label}"/>
+                    <ComboBox x:Name="CmbKitchen"/>
+                    <CheckBox x:Name="ChkReceiptAuto" Content="Ödeme sonrası fişi otomatik yazdır"/>
+                    <CheckBox x:Name="ChkKitchenAuto" Content="Kaydet ve ödemede mutfak fişini otomatik yazdır (yalnızca yeni eklenenler)"/>
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Satır genişliği (karakter)" Style="{StaticResource Label}"/>
+                            <TextBox x:Name="TxtChars"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Kağıt genişliği (piksel)" Style="{StaticResource Label}"/>
+                            <TextBox x:Name="TxtWidthPx"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Yazı boyutu (pt)" Style="{StaticResource Label}"/>
+                            <TextBox x:Name="TxtFontSize"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="80 mm rulo için: 32 karakter, 280 piksel, 10 pt. 58 mm rulo için: 24 karakter, 200 piksel, 9 pt."
+                               Foreground="#52606D" Margin="4,6" TextWrapping="Wrap"/>
+                    <Button Content="Test fişi yazdır" HorizontalAlignment="Left" Width="180" Click="TestPrint_Click"/>
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Kullanıcılar">
+                <DockPanel Margin="10">
+                    <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Foreground="#52606D" Margin="4,0,4,6"
+                               Text="Yeni kullanıcı için en alttaki boş satırı doldur. Yönetici (admin) menü, rapor ve ayarlara girebilir; kasiyer yalnızca satış ve gider girer. Şifreler en az 4 rakam ve birbirinden farklı olmalı."/>
+                    <DataGrid x:Name="GridUsers" CanUserAddRows="True" CanUserDeleteRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="Şifre (PIN)" Binding="{Binding Pin}" Width="140"/>
+                            <DataGridComboBoxColumn x:Name="ColRole" Header="Yetki" SelectedItemBinding="{Binding Role}" Width="140"/>
+                            <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Active}" Width="70"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+
+            <TabItem Header="Ödeme Türleri">
+                <DockPanel Margin="10">
+                    <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Foreground="#52606D" Margin="4,0,4,6"
+                               Text="Kullanmadığın türlerin 'Aktif' işaretini kaldır. Para üstü yalnızca 'Nakit' işaretli türlerde hesaplanır."/>
+                    <DataGrid x:Name="GridPayTypes" CanUserAddRows="True" CanUserDeleteRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Name}" Width="*"/>
+                            <DataGridCheckBoxColumn Header="Nakit" Binding="{Binding IsCash}" Width="70"/>
+                            <DataGridTextColumn Header="Sıra" Binding="{Binding Sort}" Width="70"/>
+                            <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Active}" Width="70"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+
+            <TabItem Header="Yedekleme">
+                <StackPanel Margin="10">
+                    <TextBlock TextWrapping="Wrap" Margin="4" Text="Program her açılışta günlük yedek alır ve son 30 yedeği saklar. Bilgisayar arızasına karşı yedek klasörünü düzenli olarak bir USB belleğe kopyala."/>
+                    <TextBlock Text="Veri klasörü" Style="{StaticResource Label}"/>
+                    <TextBox x:Name="TxtDataDir" IsReadOnly="True"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Şimdi Yedekle" Click="BackupNow_Click"/>
+                        <Button Content="Yedek Klasörünü Aç" Click="OpenBackups_Click"/>
+                    </StackPanel>
+                    <TextBlock x:Name="TxtVersion" Foreground="#52606D" Margin="4,20,4,0"/>
+                </StackPanel>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

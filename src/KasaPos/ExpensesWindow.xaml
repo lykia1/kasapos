@@ -1,0 +1,38 @@
+<Window x:Class="KasaPos.ExpensesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Giderler" Width="720" Height="560" WindowStartupLocation="CenterOwner"
+        FontFamily="Segoe UI" Background="{StaticResource PanelBg}">
+    <DockPanel Margin="12">
+        <TextBlock DockPanel.Dock="Top" x:Name="TxtTitle" Style="{StaticResource H1}"/>
+        <Grid DockPanel.Dock="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="140"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="Açıklama (ör. ekmek, tüp, kurye yakıt)" Style="{StaticResource Label}"/>
+                <TextBox x:Name="TxtDesc"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1">
+                <TextBlock Text="Tutar ₺" Style="{StaticResource Label}"/>
+                <TextBox x:Name="TxtAmount"/>
+            </StackPanel>
+            <Button Grid.Column="2" Content="Ekle" Style="{StaticResource AccentButton}" VerticalAlignment="Bottom" Width="100" Click="Add_Click"/>
+        </Grid>
+        <DockPanel DockPanel.Dock="Bottom">
+            <Button DockPanel.Dock="Right" Content="Kapat" Width="120" IsCancel="True"/>
+            <Button DockPanel.Dock="Left" Content="Seçiliyi Sil" Style="{StaticResource DangerButton}" Width="140" Click="Delete_Click"/>
+            <TextBlock x:Name="TxtTotal" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        </DockPanel>
+        <DataGrid x:Name="GridData" IsReadOnly="True" Margin="3,10,3,3" SelectionMode="Single">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Saat" Binding="{Binding TimeText}" Width="70"/>
+                <DataGridTextColumn Header="Açıklama" Binding="{Binding Description}" Width="*"/>
+                <DataGridTextColumn Header="Tutar" Binding="{Binding AmountText}" Width="120"/>
+                <DataGridTextColumn Header="Giren" Binding="{Binding UserName}" Width="120"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>
