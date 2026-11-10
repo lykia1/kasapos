@@ -160,6 +160,7 @@ namespace KasaPos.Printing
             foreach (var it in o.Items.Where(i => i.Qty > 0))
             {
                 l.Add(LR(it.QtyText + " x " + it.Name, Money.Fmt(it.Total)));
+                if (!string.IsNullOrWhiteSpace(it.Options)) foreach (var w in Wrap("   " + it.Options)) l.Add(w);
                 if (!string.IsNullOrWhiteSpace(it.Note)) l.Add("   " + it.Note);
             }
             l.Add(Line());
@@ -200,6 +201,7 @@ namespace KasaPos.Printing
             {
                 decimal q = onlyNew ? it.Qty - it.PrintedQty : it.Qty;
                 l.Add("!" + q.ToString("0.##", Money.Tr) + " x " + it.Name);
+                if (!string.IsNullOrWhiteSpace(it.Options)) foreach (var w in Wrap("   " + it.Options)) l.Add("#" + w);
                 if (!string.IsNullOrWhiteSpace(it.Note)) l.Add("#   >> " + it.Note);
             }
             var removed = o.Items.Where(i => i.PrintedQty > i.Qty).ToList();

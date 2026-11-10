@@ -1,0 +1,70 @@
+<Window x:Class="KasaPos.OptionsAdminWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Ürün Seçenekleri" Width="1180" Height="700" WindowStartupLocation="CenterOwner"
+        Icon="/app.ico" FontFamily="Segoe UI" Background="{StaticResource PanelBg}">
+    <DockPanel Margin="14">
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Text="Ürün Seçenekleri ve Ekstralar" Style="{StaticResource H1}"/>
+            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextSub}" Margin="4,0,4,10"
+                       Text="1) Soldan bir seçenek grubu ekle veya seç (ör. Porsiyon, Tercih, Ekstralar).  2) Ortada o grubun seçeneklerini ve fiyat farkını yaz (Yarım: -40, Ekstra kaşar: 20, fark yoksa 0).  3) Sağda bu grubun çıkacağı ürünleri işaretle.  En az 1 / en çok 1 = tek seçim zorunlu; 0 / 0 = serbest çoklu seçim."/>
+        </StackPanel>
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+            <Button DockPanel.Dock="Left" Content="Örnek Döner Seçeneklerini Yükle" Click="Sample_Click"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Kapat" Width="120" IsCancel="True"/>
+                <Button Content="Kaydet" Width="160" Style="{StaticResource AccentButton}" Click="Save_Click"/>
+            </StackPanel>
+        </DockPanel>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.3*"/>
+                <ColumnDefinition Width="1.2*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border Style="{StaticResource Card}" Margin="3">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Seçenek grupları" FontWeight="SemiBold" FontSize="15" Margin="4,0,4,6"/>
+                    <DataGrid x:Name="GridGroups" CanUserAddRows="True" CanUserDeleteRows="False" SelectionChanged="GridGroups_SelectionChanged" SelectionMode="Single">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Grup adı" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="En az" Binding="{Binding MinSelect}" Width="60"/>
+                            <DataGridTextColumn Header="En çok" Binding="{Binding MaxSelect}" Width="65"/>
+                            <DataGridTextColumn Header="Sıra" Binding="{Binding Sort}" Width="50"/>
+                            <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Active}" Width="55"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="3">
+                <DockPanel>
+                    <TextBlock x:Name="TxtOptTitle" DockPanel.Dock="Top" Text="Seçenekler" FontWeight="SemiBold" FontSize="15" Margin="4,0,4,6"/>
+                    <DataGrid x:Name="GridOptions" CanUserAddRows="True" CanUserDeleteRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Seçenek" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="Fiyat farkı ₺" Binding="{Binding Price, StringFormat=N2}" Width="110"/>
+                            <DataGridTextColumn Header="Sıra" Binding="{Binding Sort}" Width="50"/>
+                            <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Active}" Width="55"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+            <Border Grid.Column="2" Style="{StaticResource Card}" Margin="3">
+                <DockPanel>
+                    <TextBlock x:Name="TxtProdTitle" DockPanel.Dock="Top" Text="Bu grubun çıkacağı ürünler" FontWeight="SemiBold" FontSize="15" Margin="4,0,4,6"/>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                        <Button Content="Tümünü seç" Click="AllProducts_Click" MinHeight="32" FontSize="13"/>
+                        <Button Content="Hiçbiri" Click="NoProducts_Click" MinHeight="32" FontSize="13"/>
+                    </StackPanel>
+                    <ListBox x:Name="LstProducts" BorderThickness="0" Margin="0,6,0,0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" Margin="2"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

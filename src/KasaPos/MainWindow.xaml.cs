@@ -50,9 +50,8 @@ namespace KasaPos
         {
             bool admin = Me != null && Me.IsAdmin;
             var vis = admin ? Visibility.Visible : Visibility.Collapsed;
-            BtnMenu.Visibility = vis;
-            BtnTables.Visibility = vis;
             BtnSettings.Visibility = vis;
+            BtnDayEnd.Visibility = vis;
             BtnReports.Visibility = vis;
             BtnStock.Visibility = vis;
             UpdateHeader();
@@ -147,6 +146,7 @@ namespace KasaPos
                 ? _products.Where(p => (p.Name ?? "").ToLower(Money.Tr).Contains(q))
                 : _products.Where(p => p.CategoryId == _selectedCategoryId);
 
+            var withOpts = OptionRepo.ProductsWithOptions();
             foreach (var p in list)
             {
                 var cat = _categories.FirstOrDefault(c => c.Id == p.CategoryId);
@@ -168,7 +168,7 @@ namespace KasaPos
                 });
                 sp.Children.Add(new TextBlock
                 {
-                    Text = Money.FmtTl(p.PriceFor(type)),
+                    Text = Money.FmtTl(p.PriceFor(type)) + (withOpts.Contains(p.Id) ? "  ⋯" : ""),
                     TextAlignment = TextAlignment.Center,
                     FontSize = 15,
                     FontWeight = FontWeights.Bold,
@@ -387,7 +387,7 @@ namespace KasaPos
             foreach (var it in _order.Items)
             {
                 var p = _products.FirstOrDefault(x => x.Id == it.ProductId);
-                if (p != null) it.UnitPrice = p.PriceFor(t);
+                if (p != null) it.UnitPrice = p.PriceFor(t) + it.OptionsPrice;
             }
             UpdateTypePanels();
             RefreshCart();
@@ -416,9 +416,29 @@ namespace KasaPos
                 ShowView(true);
                 return;
             }
-            var existing = _order.Items.FirstOrDefault(i => i.ProductId == p.Id && string.IsNullOrEmpty(i.Note));
+            decimal basePrice = p.PriceFor(_order.OrderType);
+            string opts = null;
+            decimal optsPrice = 0;
+            var groups = OptionRepo.GroupsForProduct(p.Id);
+            if (groups.Count > 0)
+            {
+                var dlg = new OptionsPickerWindow(p, basePrice, groups) { Owner = this };
+                if (dlg.ShowDialog() != true) return;
+                opts = string.IsNullOrWhiteSpace(dlg.OptionsText) ? null : dlg.OptionsText;
+                optsPrice = dlg.OptionsPrice;
+            }
+            var existing = _order.Items.FirstOrDefault(i => i.ProductId == p.Id && string.IsNullOrEmpty(i.Note)
+                && (i.Options ?? "") == (opts ?? "") && i.UnitPrice == basePrice + optsPrice);
             if (existing != null) existing.Qty += 1;
-            else _order.Items.Add(new OrderItem { ProductId = p.Id, Name = p.Name, Qty = 1, UnitPrice = p.PriceFor(_order.OrderType) });
+            else _order.Items.Add(new OrderItem
+            {
+                ProductId = p.Id,
+                Name = p.Name,
+                Qty = 1,
+                UnitPrice = basePrice + optsPrice,
+                Options = opts,
+                OptionsPrice = optsPrice
+            });
             RefreshCart();
             LstCart.SelectedItem = existing ?? _order.Items.Last();
             LstCart.ScrollIntoView(LstCart.SelectedItem);
@@ -515,7 +535,7 @@ namespace KasaPos
             if (it.Qty > 1 && string.IsNullOrEmpty(it.Note) && !string.IsNullOrWhiteSpace(s))
             {
                 it.Qty -= 1;
-                var n = new OrderItem { ProductId = it.ProductId, Name = it.Name, Qty = 1, UnitPrice = it.UnitPrice, Note = s.Trim() };
+                var n = new OrderItem { ProductId = it.ProductId, Name = it.Name, Qty = 1, UnitPrice = it.UnitPrice, Note = s.Trim(), Options = it.Options, OptionsPrice = it.OptionsPrice };
                 _order.Items.Insert(_order.Items.IndexOf(it) + 1, n);
                 RefreshCart();
                 LstCart.SelectedItem = n;
@@ -577,6 +597,12 @@ namespace KasaPos
         private bool CollectAndValidate()
         {
             if (!LicenseOk()) return false;
+            if (Settings.GetBool("cash_required", false) && CashRepo.Current() == null)
+            {
+                MessageBox.Show("Satış yapmadan önce kasayı açmalısın.", Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                new CashWindow { Owner = this }.ShowDialog();
+                if (CashRepo.Current() == null) return false;
+            }
             if (!_order.Items.Any(i => i.Qty > 0))
             {
                 MessageBox.Show("Sepet boş.", Title);
@@ -876,6 +902,22 @@ namespace KasaPos
             }
         }
 
+        private void BtnCash_Click(object sender, RoutedEventArgs e)
+        {
+            new CashWindow { Owner = this }.ShowDialog();
+            RefreshOpenOrders();
+        }
+
+        private void BtnStaff_Click(object sender, RoutedEventArgs e)
+        {
+            new StaffWindow { Owner = this }.ShowDialog();
+        }
+
+        private void BtnDayEnd_Click(object sender, RoutedEventArgs e)
+        {
+            new ReportWindow { Owner = this }.ShowDialog();
+        }
+
         private void BtnStock_Click(object sender, RoutedEventArgs e)
         {
             new StockWindow { Owner = this }.ShowDialog();
@@ -969,7 +1011,7 @@ namespace KasaPos
                 Note = "Bölünmüş hesap"
             };
             foreach (var kv in sel)
-                part.Items.Add(new OrderItem { ProductId = kv.Key.ProductId, Name = kv.Key.Name, Qty = kv.Value, UnitPrice = kv.Key.UnitPrice, PrintedQty = kv.Value, Note = kv.Key.Note });
+                part.Items.Add(new OrderItem { ProductId = kv.Key.ProductId, Name = kv.Key.Name, Qty = kv.Value, UnitPrice = kv.Key.UnitPrice, PrintedQty = kv.Value, Note = kv.Key.Note, Options = kv.Key.Options, OptionsPrice = kv.Key.OptionsPrice });
 
             var pay = new PaymentWindow(part.Total) { Owner = this };
             if (pay.ShowDialog() != true) return;
@@ -1084,6 +1126,8 @@ namespace KasaPos
         {
             new SettingsWindow { Owner = this }.ShowDialog();
             UpdateHeader();
+            ReloadMenu();
+            RefreshOpenOrders();
         }
 
         private void BtnLock_Click(object sender, RoutedEventArgs e)

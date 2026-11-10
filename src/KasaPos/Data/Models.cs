@@ -28,6 +28,7 @@ namespace KasaPos.Data
         public string Pin { get; set; }
         public string Role { get; set; } = "kasiyer";
         public bool Active { get; set; } = true;
+        public decimal HourlyWage { get; set; }
         public bool IsAdmin => Role == "admin";
     }
 
@@ -120,11 +121,24 @@ namespace KasaPos.Data
         public decimal UnitPrice { get; set; }
         public decimal PrintedQty { get; set; }
         public string Note { get; set; }
+        /// <summary>Seçilen ürün seçenekleri (ör. "Tam · Acısız · Ekstra kaşar").</summary>
+        public string Options { get; set; }
+        /// <summary>Seçeneklerin birim fiyata etkisi (sipariş türü değişince yeniden hesaplamak için).</summary>
+        public decimal OptionsPrice { get; set; }
 
         public decimal Total => Math.Round(Qty * UnitPrice, 2);
         public string QtyText => Qty.ToString("0.##", Money.Tr);
         public string TotalText => Money.Fmt(Total);
-        public string DisplayName => string.IsNullOrWhiteSpace(Note) ? Name : Name + "\n   ↳ " + Note;
+        public string DisplayName
+        {
+            get
+            {
+                var s = Name;
+                if (!string.IsNullOrWhiteSpace(Options)) s += "\n   " + Options;
+                if (!string.IsNullOrWhiteSpace(Note)) s += "\n   ↳ " + Note;
+                return s;
+            }
+        }
     }
 
     public class Payment

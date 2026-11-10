@@ -15,9 +15,19 @@ namespace KasaPos
         private ObservableCollection<PaymentType> _payTypes;
         private ObservableCollection<Courier> _couriers;
 
-        public SettingsWindow()
+        public SettingsWindow(string page = null)
         {
             InitializeComponent();
+            foreach (TabItem t in Tabs.Items) LstNav.Items.Add(t.Header);
+            Tabs.SelectedIndex = 0;
+            if (page != null)
+            {
+                int idx = LstNav.Items.IndexOf(page);
+                if (idx >= 0) Tabs.SelectedIndex = idx;
+            }
+            TxtNavVersion.Text = AppInfo.Name + " v" + AppInfo.Version;
+            ChkCashRequired.IsChecked = Settings.GetBool("cash_required", false);
+            UpdateTablesInfo();
 
             TxtBiz.Text = Settings.Get("biz_name");
             TxtPhone.Text = Settings.Get("biz_phone");
@@ -116,6 +126,7 @@ namespace KasaPos
 
             Settings.Set("biz_name", TxtBiz.Text.Trim());
             Settings.Set("theme_color", CmbTheme.SelectedItem as string ?? "Turuncu");
+            Settings.SetBool("cash_required", ChkCashRequired.IsChecked == true);
             Settings.Set("biz_phone", TxtPhone.Text.Trim());
             Settings.Set("biz_address", TxtAddress.Text.Trim());
             Settings.Set("receipt_footer", TxtFooter.Text.Trim());
@@ -186,6 +197,23 @@ namespace KasaPos
             };
             var err = Printer.Print(CmbReceipt.SelectedItem as string, lines, "Test");
             if (err != null) MessageBox.Show("Yazdırılamadı: " + err, Title);
+        }
+
+        private void UpdateTablesInfo()
+        {
+            var t = TableRepo.All(false);
+            TxtTablesInfo.Text = t.Count == 0 ? "Henüz masa tanımlı değil." :
+                t.Count(x => x.Active) + " aktif masa, " + t.Select(x => x.Area).Distinct().Count() + " bölüm.";
+        }
+
+        private void OpenMenu_Click(object sender, RoutedEventArgs e) => new MenuWindow { Owner = this }.ShowDialog();
+        private void OpenOptions_Click(object sender, RoutedEventArgs e) => new OptionsAdminWindow { Owner = this }.ShowDialog();
+        private void OpenStock_Click(object sender, RoutedEventArgs e) => new StockWindow { Owner = this }.ShowDialog();
+
+        private void OpenTables_Click(object sender, RoutedEventArgs e)
+        {
+            new TablesWindow { Owner = this }.ShowDialog();
+            UpdateTablesInfo();
         }
 
         private async void CheckUpdate_Click(object sender, RoutedEventArgs e)

@@ -28,6 +28,7 @@ namespace KasaPos.Printing
                 foreach (var it in added)
                 {
                     sb.AppendLine((it.Qty - it.PrintedQty).ToString("0.##", Money.Tr) + " x " + it.Name);
+                    if (!string.IsNullOrWhiteSpace(it.Options)) sb.AppendLine("   " + it.Options);
                     if (!string.IsNullOrWhiteSpace(it.Note)) sb.AppendLine("   » " + it.Note);
                 }
                 foreach (var it in removed)

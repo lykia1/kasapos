@@ -83,6 +83,15 @@ JOIN orders o ON o.id=pm.order_id WHERE o.status='PAID' AND o." + where.Trim() +
             foreach (var x in types) l.Add(Printer.LR(OrderTypes.Label(x.Item1) + " (" + x.Item2 + ")", Money.Fmt(x.Item3)));
             l.Add(Printer.Line());
 
+            var cashiers = Db.Query("SELECT COALESCE(user_name,'-') AS n, COUNT(*) AS c, SUM(total) AS a FROM orders WHERE status='PAID' AND" + where + " GROUP BY user_name ORDER BY a DESC",
+                r => (Db.S(r, "n"), Db.L(r, "c"), Db.D(r, "a")), p);
+            if (cashiers.Count > 0)
+            {
+                l.Add("#KASİYERLER");
+                foreach (var x in cashiers) l.Add(Printer.LR(x.Item1 + " (" + x.Item2 + ")", Money.Fmt(x.Item3)));
+                l.Add(Printer.Line());
+            }
+
             var cour = Db.Query("SELECT courier_name AS n, COUNT(*) AS c, SUM(total) AS a FROM orders WHERE status='PAID' AND courier_name IS NOT NULL AND" + where + " GROUP BY courier_name ORDER BY c DESC",
                 r => (Db.S(r, "n"), Db.L(r, "c"), Db.D(r, "a")), p);
             if (cour.Count > 0)

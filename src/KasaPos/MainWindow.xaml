@@ -104,40 +104,40 @@
                         <TextBlock Text="Giderler" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button x:Name="BtnReports" Style="{StaticResource HomeTile}" Click="BtnReports_Click" Grid.Row="1" Grid.Column="0">
+                <Button Style="{StaticResource HomeTile}" Click="BtnCash_Click" Grid.Row="1" Grid.Column="0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE825;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Kasa" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource HomeTile}" Click="BtnStaff_Click" Grid.Row="2" Grid.Column="0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Personel" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="BtnReports" Style="{StaticResource HomeTile}" Click="BtnReports_Click" Grid.Row="3" Grid.Column="0">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="&#xE9D2;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
                         <TextBlock Text="Raporlar" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button x:Name="BtnStock" Style="{StaticResource HomeTile}" Click="BtnStock_Click" Grid.Row="2" Grid.Column="0">
+                <Button x:Name="BtnStock" Style="{StaticResource HomeTile}" Click="BtnStock_Click" Grid.Row="3" Grid.Column="1">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="&#xE7B8;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Stok / Reçete" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Stok" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button x:Name="BtnMenu" Style="{StaticResource HomeTile}" Click="BtnMenu_Click" Grid.Row="3" Grid.Column="0">
+                <Button x:Name="BtnDayEnd" Style="{StaticResource HomeTile}" Click="BtnDayEnd_Click" Grid.Row="3" Grid.Column="2">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="&#xE8FD;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Menü / Ürünler" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+                        <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Gün Sonu" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
-                <Button x:Name="BtnTables" Style="{StaticResource HomeTile}" Click="BtnTables_Click" Grid.Row="3" Grid.Column="1">
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="&#xE71D;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Masa Düzeni" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-                <Button x:Name="BtnSettings" Style="{StaticResource HomeTile}" Click="BtnSettings_Click" Grid.Row="3" Grid.Column="2">
+                <Button x:Name="BtnSettings" Style="{StaticResource HomeTile}" Click="BtnSettings_Click" Grid.Row="3" Grid.Column="3">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
                         <TextBlock Text="Ayarlar" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-                <Button Style="{StaticResource HomeTile}" Click="BtnLicense_Click" Grid.Row="3" Grid.Column="3">
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="&#xE8D7;" FontFamily="Segoe MDL2 Assets" FontSize="34" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Lisans" FontSize="14" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
                 <Button Style="{StaticResource HomeTile}" Click="BtnLock_Click" Grid.Row="3" Grid.Column="4">

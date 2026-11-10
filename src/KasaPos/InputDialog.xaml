@@ -6,6 +6,7 @@
     <StackPanel Margin="14">
         <TextBlock x:Name="TxtPrompt" FontSize="16" TextWrapping="Wrap" Margin="4,0,4,8"/>
         <TextBox x:Name="TxtValue" FontSize="18" KeyDown="TxtValue_KeyDown"/>
+        <PasswordBox x:Name="PwdValue" FontSize="20" KeyDown="TxtValue_KeyDown" Visibility="Collapsed"/>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
             <Button Content="Vazgeç" Width="110" IsCancel="True"/>
             <Button Content="Tamam" Width="110" Style="{StaticResource AccentButton}" Click="Ok_Click"/>

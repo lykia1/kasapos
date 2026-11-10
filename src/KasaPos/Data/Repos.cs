@@ -14,7 +14,8 @@ namespace KasaPos.Data
                 Name = Db.S(r, "name"),
                 Pin = Db.S(r, "pin"),
                 Role = Db.S(r, "role"),
-                Active = Db.B(r, "active")
+                Active = Db.B(r, "active"),
+                HourlyWage = Db.D(r, "hourly_wage")
             });
 
         public static User ByPin(string pin) => All(true).FirstOrDefault(u => u.Pin == pin);
@@ -24,11 +25,11 @@ namespace KasaPos.Data
         public static void Save(User u)
         {
             if (u.Id == 0)
-                Db.Exec("INSERT INTO users(name,pin,role,active) VALUES(@n,@p,@r,@a)",
-                    ("@n", u.Name), ("@p", u.Pin), ("@r", u.Role ?? "kasiyer"), ("@a", u.Active));
+                Db.Exec("INSERT INTO users(name,pin,role,active,hourly_wage) VALUES(@n,@p,@r,@a,@w)",
+                    ("@n", u.Name), ("@p", u.Pin), ("@r", u.Role ?? "kasiyer"), ("@a", u.Active), ("@w", u.HourlyWage));
             else
-                Db.Exec("UPDATE users SET name=@n,pin=@p,role=@r,active=@a WHERE id=@id",
-                    ("@n", u.Name), ("@p", u.Pin), ("@r", u.Role ?? "kasiyer"), ("@a", u.Active), ("@id", u.Id));
+                Db.Exec("UPDATE users SET name=@n,pin=@p,role=@r,active=@a,hourly_wage=@w WHERE id=@id",
+                    ("@n", u.Name), ("@p", u.Pin), ("@r", u.Role ?? "kasiyer"), ("@a", u.Active), ("@w", u.HourlyWage), ("@id", u.Id));
         }
     }
 
@@ -350,7 +351,9 @@ namespace KasaPos.Data
                 Qty = Db.D(r, "qty"),
                 UnitPrice = Db.D(r, "unit_price"),
                 PrintedQty = Db.D(r, "printed_qty"),
-                Note = Db.S(r, "note")
+                Note = Db.S(r, "note"),
+                Options = Db.S(r, "options"),
+                OptionsPrice = Db.D(r, "options_price")
             }, ("@o", orderId));
 
         public static bool TableIsBusy(string tableNo, long exceptOrderId) =>
@@ -391,8 +394,9 @@ subtotal=@st,discount=@dc,total=@tt,status=@s,user_id=@uid,user_name=@un,note=@n
                 }
                 foreach (var it in o.Items)
                 {
-                    it.Id = Db.Insert(c, tx, "INSERT INTO order_items(order_id,product_id,name,qty,unit_price,printed_qty,note) VALUES(@o,@p,@n,@q,@u,@pq,@nt)",
-                        ("@o", o.Id), ("@p", it.ProductId), ("@n", it.Name), ("@q", it.Qty), ("@u", it.UnitPrice), ("@pq", it.PrintedQty), ("@nt", it.Note));
+                    it.Id = Db.Insert(c, tx, "INSERT INTO order_items(order_id,product_id,name,qty,unit_price,printed_qty,note,options,options_price) VALUES(@o,@p,@n,@q,@u,@pq,@nt,@op,@opp)",
+                        ("@o", o.Id), ("@p", it.ProductId), ("@n", it.Name), ("@q", it.Qty), ("@u", it.UnitPrice), ("@pq", it.PrintedQty), ("@nt", it.Note),
+                        ("@op", it.Options), ("@opp", it.OptionsPrice));
                 }
                 foreach (var pay in o.Payments)
                 {

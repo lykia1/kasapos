@@ -178,6 +178,54 @@ CREATE INDEX IF NOT EXISTS ix_pay_order ON payments(order_id);
   customer_id INTEGER)");
             Exec("CREATE INDEX IF NOT EXISTS ix_moves_day ON stock_moves(business_day)");
 
+            // v0.9 eklemeleri: ürün seçenekleri, kasa oturumları, personel mesaisi
+            Exec(@"CREATE TABLE IF NOT EXISTS option_groups (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  min_select INTEGER NOT NULL DEFAULT 0,
+  max_select INTEGER NOT NULL DEFAULT 0,
+  sort INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1)");
+            Exec(@"CREATE TABLE IF NOT EXISTS options (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  price REAL NOT NULL DEFAULT 0,
+  sort INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1)");
+            Exec(@"CREATE TABLE IF NOT EXISTS product_option_groups (
+  product_id INTEGER NOT NULL,
+  group_id INTEGER NOT NULL,
+  sort INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY(product_id, group_id))");
+            EnsureColumn("order_items", "options", "TEXT");
+            EnsureColumn("order_items", "options_price", "REAL NOT NULL DEFAULT 0");
+            Exec(@"CREATE TABLE IF NOT EXISTS cash_sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  business_day TEXT NOT NULL,
+  opened_at TEXT NOT NULL,
+  opened_by TEXT,
+  opening_cash REAL NOT NULL DEFAULT 0,
+  closed_at TEXT,
+  closed_by TEXT,
+  counted_cash REAL,
+  expected_cash REAL,
+  note TEXT)");
+            Exec(@"CREATE TABLE IF NOT EXISTS cash_moves (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  amount REAL NOT NULL,
+  note TEXT,
+  user_name TEXT)");
+            EnsureColumn("users", "hourly_wage", "REAL NOT NULL DEFAULT 0");
+            Exec(@"CREATE TABLE IF NOT EXISTS staff_shifts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  user_name TEXT,
+  start_at TEXT NOT NULL,
+  end_at TEXT)");
+
             if (Convert.ToInt64(Scalar("SELECT COUNT(*) FROM payment_types")) == 0)
             {
                 var defaults = new[] { "Nakit", "Kredi Kartı", "Multinet", "Pluxee (Sodexo)", "Edenred (Ticket)", "Setcard", "Metropol", "Açık Hesap" };
