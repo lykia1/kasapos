@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using KasaPos.Data;
 using KasaPos.Printing;
@@ -16,8 +17,9 @@ namespace KasaPos
         private List<Category> _categories = new List<Category>();
         private List<Product> _products = new List<Product>();
         private long _selectedCategoryId;
+        private string _selectedArea = "";
         private bool _loading;
-        private readonly DispatcherTimer _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+        private readonly DispatcherTimer _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
 
         public MainWindow()
         {
@@ -25,78 +27,291 @@ namespace KasaPos
             Title = AppInfo.Name + " v" + AppInfo.Version;
             ApplyUser();
             ReloadMenu();
-            NewOrder();
+            NewOrder(OrderTypes.GelAl);
             RefreshOpenOrders();
-            _timer.Tick += (s, e) => UpdateHeader();
+            _timer.Tick += (s, e) =>
+            {
+                UpdateHeader();
+                if (ViewTables.Visibility == Visibility.Visible) ShowTables();
+            };
             _timer.Start();
         }
 
         private User Me => App.CurrentUser;
+        private Brush Res(string key) => (Brush)FindResource(key);
 
         private void ApplyUser()
         {
             bool admin = Me != null && Me.IsAdmin;
-            BtnMenu.Visibility = admin ? Visibility.Visible : Visibility.Collapsed;
-            BtnSettings.Visibility = admin ? Visibility.Visible : Visibility.Collapsed;
-            BtnReports.Visibility = admin ? Visibility.Visible : Visibility.Collapsed;
+            var vis = admin ? Visibility.Visible : Visibility.Collapsed;
+            BtnMenu.Visibility = vis;
+            BtnTables.Visibility = vis;
+            BtnSettings.Visibility = vis;
+            BtnReports.Visibility = vis;
             UpdateHeader();
         }
 
         private void UpdateHeader()
         {
-            TxtBiz.Text = Settings.Get("biz_name", AppInfo.Name);
-            TxtUser.Text = Me == null ? "" : "Kullanıcı: " + Me.Name;
+            var biz = Settings.Get("biz_name", AppInfo.Name);
+            TxtBiz.Text = biz;
+            TxtLogo.Text = string.IsNullOrEmpty(biz) ? "K" : biz.Substring(0, 1).ToUpper(Money.Tr);
+            TxtUser.Text = Me == null ? "" : "👤 " + Me.Name;
             var day = DateTime.ParseExact(Settings.BusinessDay(DateTime.Now), "yyyy-MM-dd", null);
-            TxtDay.Text = "İş günü: " + day.ToString("dd.MM.yyyy dddd", Money.Tr) + "   " + DateTime.Now.ToString("HH:mm");
+            TxtDay.Text = "İş günü: " + day.ToString("d MMMM dddd", Money.Tr);
+            TxtClock.Text = DateTime.Now.ToString("HH:mm");
         }
 
-        // ---------------- Menü ----------------
+        // ================= Menü / ürünler =================
 
         public void ReloadMenu()
         {
             _categories = MenuRepo.Categories();
             _products = MenuRepo.Products();
-            PnlCategories.Children.Clear();
-            foreach (var c in _categories)
-            {
-                var b = new Button { Content = c.Name, Tag = c.Id, MinWidth = 110, MinHeight = 46, FontWeight = FontWeights.SemiBold };
-                b.Click += (s, e) => { _selectedCategoryId = (long)((Button)s).Tag; ShowProducts(); };
-                PnlCategories.Children.Add(b);
-            }
             if (!_categories.Any(c => c.Id == _selectedCategoryId))
                 _selectedCategoryId = _categories.Count > 0 ? _categories[0].Id : 0;
+            BuildCategories();
             ShowProducts();
+        }
+
+        private void BuildCategories()
+        {
+            PnlCategories.Children.Clear();
+            bool searching = TxtSearch.Text.Trim().Length > 0;
+            foreach (var c in _categories)
+            {
+                bool sel = !searching && c.Id == _selectedCategoryId;
+                var color = Palette.Brush(c.Color, Res("Accent"));
+                var b = new Button
+                {
+                    Content = c.Name,
+                    Tag = c.Id,
+                    MinWidth = 110,
+                    MinHeight = 46,
+                    FontWeight = FontWeights.SemiBold,
+                    Background = sel ? color : Res("Surface"),
+                    Foreground = sel ? Brushes.White : Res("TextMain"),
+                    BorderBrush = color,
+                    BorderThickness = sel ? new Thickness(1) : new Thickness(1, 1, 1, 4)
+                };
+                b.Click += (s, e) =>
+                {
+                    _selectedCategoryId = (long)((Button)s).Tag;
+                    if (TxtSearch.Text.Length > 0) TxtSearch.Text = "";
+                    BuildCategories();
+                    ShowProducts();
+                };
+                PnlCategories.Children.Add(b);
+            }
         }
 
         private void ShowProducts()
         {
-            foreach (Button b in PnlCategories.Children.OfType<Button>())
-            {
-                bool sel = (long)b.Tag == _selectedCategoryId;
-                b.Background = sel ? (System.Windows.Media.Brush)FindResource("Accent") : System.Windows.Media.Brushes.White;
-                b.Foreground = sel ? System.Windows.Media.Brushes.White : System.Windows.Media.Brushes.Black;
-            }
             PnlProducts.Children.Clear();
             string type = _order == null ? OrderTypes.GelAl : _order.OrderType;
-            foreach (var p in _products.Where(x => x.CategoryId == _selectedCategoryId))
+            string q = TxtSearch.Text.Trim().ToLower(Money.Tr);
+            IEnumerable<Product> list = q.Length > 0
+                ? _products.Where(p => (p.Name ?? "").ToLower(Money.Tr).Contains(q))
+                : _products.Where(p => p.CategoryId == _selectedCategoryId);
+
+            foreach (var p in list)
             {
-                var sp = new StackPanel();
-                sp.Children.Add(new TextBlock { Text = p.Name, TextWrapping = TextWrapping.Wrap, TextAlignment = TextAlignment.Center, FontSize = 15, FontWeight = FontWeights.SemiBold });
-                sp.Children.Add(new TextBlock { Text = Money.FmtTl(p.PriceFor(type)), TextAlignment = TextAlignment.Center, FontSize = 13, Foreground = System.Windows.Media.Brushes.DimGray, Margin = new Thickness(0, 4, 0, 0) });
-                var b = new Button { Content = sp, Tag = p, Width = 150, Height = 90, Margin = new Thickness(4) };
+                var cat = _categories.FirstOrDefault(c => c.Id == p.CategoryId);
+                string colorName = !string.IsNullOrEmpty(p.Color) ? p.Color : cat?.Color;
+                var stripe = Palette.Brush(colorName, Res("Line"));
+
+                var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+                var img = p.HasImage ? ImageCache.Get(p.Image) : null;
+                if (img != null)
+                    sp.Children.Add(new Image { Source = img, Height = 70, Stretch = Stretch.UniformToFill, Margin = new Thickness(0, 0, 0, 6) });
+                sp.Children.Add(new TextBlock
+                {
+                    Text = p.Name,
+                    TextWrapping = TextWrapping.Wrap,
+                    TextAlignment = TextAlignment.Center,
+                    FontSize = 15,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = Res("TextMain")
+                });
+                sp.Children.Add(new TextBlock
+                {
+                    Text = Money.FmtTl(p.PriceFor(type)),
+                    TextAlignment = TextAlignment.Center,
+                    FontSize = 14,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = Res("AccentDark"),
+                    Margin = new Thickness(0, 4, 0, 0)
+                });
+                var b = new Button
+                {
+                    Content = sp,
+                    Tag = p,
+                    Width = 160,
+                    Height = img != null ? 160 : 100,
+                    Margin = new Thickness(5),
+                    Padding = new Thickness(8),
+                    BorderBrush = stripe,
+                    BorderThickness = new Thickness(1, 5, 1, 1)
+                };
                 b.Click += (s, e) => AddProduct((Product)((Button)s).Tag);
                 PnlProducts.Children.Add(b);
             }
             if (_categories.Count == 0)
-                PnlProducts.Children.Add(new TextBlock { Text = "Menü boş. Üstteki 'Menü' düğmesinden kategori ve ürün ekle.", FontSize = 16, Margin = new Thickness(10) });
+                PnlProducts.Children.Add(new TextBlock { Text = "Menü boş. Üstteki 'Menü' düğmesinden kategori ve ürün ekle.", FontSize = 16, Margin = new Thickness(10), Foreground = Res("TextSub") });
+            else if (PnlProducts.Children.Count == 0 && q.Length > 0)
+                PnlProducts.Children.Add(new TextBlock { Text = "\"" + TxtSearch.Text + "\" ile eşleşen ürün yok.", FontSize = 15, Margin = new Thickness(10), Foreground = Res("TextSub") });
         }
 
-        // ---------------- Sipariş ----------------
-
-        private void NewOrder()
+        private void TxtSearch_TextChanged(object sender, TextChangedEventArgs e)
         {
-            _order = new Order { OrderType = OrderTypes.GelAl, UserId = Me?.Id ?? 0, UserName = Me?.Name };
+            BtnClearSearch.Visibility = TxtSearch.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+            BuildCategories();
+            ShowProducts();
+        }
+
+        private void BtnClearSearch_Click(object sender, RoutedEventArgs e)
+        {
+            TxtSearch.Text = "";
+            TxtSearch.Focus();
+        }
+
+        // ================= Masa planı =================
+
+        private void ShowView(bool tables)
+        {
+            ViewTables.Visibility = tables ? Visibility.Visible : Visibility.Collapsed;
+            ViewMenu.Visibility = tables ? Visibility.Collapsed : Visibility.Visible;
+            if (tables) ShowTables();
+        }
+
+        private void ShowTables()
+        {
+            var tables = TableRepo.All();
+            var open = OrderRepo.Open().Where(o => o.OrderType == OrderTypes.Masa).ToList();
+
+            // Bölüm sekmeleri
+            var areas = tables.Select(t => t.Area).Distinct().ToList();
+            if (_selectedArea != "" && !areas.Contains(_selectedArea)) _selectedArea = "";
+            PnlAreas.Children.Clear();
+            if (areas.Count > 1)
+            {
+                foreach (var a in new[] { "" }.Concat(areas))
+                {
+                    bool sel = a == _selectedArea;
+                    var b = new Button
+                    {
+                        Content = a == "" ? "Tümü" : a,
+                        Tag = a,
+                        MinWidth = 90,
+                        Background = sel ? Res("Dark") : Res("Surface"),
+                        Foreground = sel ? Brushes.White : Res("TextMain")
+                    };
+                    b.Click += (s, e) => { _selectedArea = (string)((Button)s).Tag; ShowTables(); };
+                    PnlAreas.Children.Add(b);
+                }
+            }
+
+            PnlTables.Children.Clear();
+            if (tables.Count == 0)
+            {
+                PnlTables.Children.Add(new TextBlock
+                {
+                    Text = "Henüz masa tanımlanmamış.\nÜstteki 'Masa Düzeni' düğmesinden masalarını ekle ya da aşağıya masa numarasını yazıp 'Aç'a bas.",
+                    FontSize = 15,
+                    Margin = new Thickness(10),
+                    Foreground = Res("TextSub"),
+                    TextWrapping = TextWrapping.Wrap
+                });
+                return;
+            }
+
+            foreach (var t in tables.Where(x => _selectedArea == "" || x.Area == _selectedArea))
+            {
+                var o = open.FirstOrDefault(x => string.Equals(x.TableNo, t.Name, StringComparison.OrdinalIgnoreCase));
+                bool busy = o != null;
+                var sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+                sp.Children.Add(new TextBlock { Text = t.Name, FontSize = 22, FontWeight = FontWeights.Bold, TextAlignment = TextAlignment.Center, Foreground = Res("TextMain") });
+                if (busy)
+                {
+                    int mins = (int)Math.Max(0, (DateTime.Now - o.CreatedAt).TotalMinutes);
+                    sp.Children.Add(new TextBlock { Text = Money.FmtTl(o.Total), FontSize = 14, FontWeight = FontWeights.SemiBold, TextAlignment = TextAlignment.Center, Foreground = Res("Busy") });
+                    sp.Children.Add(new TextBlock { Text = mins < 60 ? mins + " dk" : (mins / 60) + " sa " + (mins % 60) + " dk", FontSize = 12, TextAlignment = TextAlignment.Center, Foreground = Res("TextSub") });
+                }
+                else
+                {
+                    sp.Children.Add(new TextBlock { Text = "Boş", FontSize = 13, TextAlignment = TextAlignment.Center, Foreground = Res("Ok") });
+                }
+                if (areas.Count > 1 && _selectedArea == "")
+                    sp.Children.Add(new TextBlock { Text = t.Area, FontSize = 11, TextAlignment = TextAlignment.Center, Foreground = Res("TextSub") });
+
+                var b = new Button
+                {
+                    Content = sp,
+                    Tag = t.Name,
+                    Width = 132,
+                    Height = 108,
+                    Margin = new Thickness(6),
+                    Background = busy ? Res("BusySoft") : Res("OkSoft"),
+                    BorderBrush = busy ? Res("Busy") : Res("Ok"),
+                    BorderThickness = new Thickness(2)
+                };
+                b.Click += (s, e) => OpenTable((string)((Button)s).Tag);
+                PnlTables.Children.Add(b);
+            }
+        }
+
+        private void OpenTable(string tableName)
+        {
+            if (string.IsNullOrWhiteSpace(tableName)) return;
+            tableName = tableName.Trim();
+            var existing = OrderRepo.Open().FirstOrDefault(o => o.OrderType == OrderTypes.Masa &&
+                string.Equals(o.TableNo, tableName, StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                _order = OrderRepo.Get(existing.Id);
+            }
+            else
+            {
+                _order = new Order { OrderType = OrderTypes.Masa, TableNo = tableName, UserId = Me?.Id ?? 0, UserName = Me?.Name };
+            }
             LoadOrderIntoUi();
+            ShowView(false);
+        }
+
+        private void TxtTable_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter) BtnOpenManualTable_Click(sender, e);
+        }
+
+        private void BtnOpenManualTable_Click(object sender, RoutedEventArgs e)
+        {
+            var t = TxtTable.Text.Trim();
+            if (t == "") return;
+            TxtTable.Text = "";
+            OpenTable(t);
+        }
+
+        private void BtnTablePlan_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ConfirmLeaveUnsaved()) return;
+            NewOrder(OrderTypes.Masa);
+        }
+
+        private bool ConfirmLeaveUnsaved()
+        {
+            if (_order.Id == 0 && _order.Items.Count > 0)
+                return MessageBox.Show("Kaydedilmemiş sepet silinecek. Devam edilsin mi?", Title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+            return true;
+        }
+
+        // ================= Sipariş =================
+
+        private void NewOrder(string type)
+        {
+            _order = new Order { OrderType = type, UserId = Me?.Id ?? 0, UserName = Me?.Name };
+            LoadOrderIntoUi();
+            ShowView(type == OrderTypes.Masa);
+            LstOpen.SelectedItem = null;
         }
 
         private void LoadOrderIntoUi()
@@ -105,7 +320,6 @@ namespace KasaPos
             RbGelAl.IsChecked = _order.OrderType == OrderTypes.GelAl;
             RbMasa.IsChecked = _order.OrderType == OrderTypes.Masa;
             RbPaket.IsChecked = _order.OrderType == OrderTypes.Paket;
-            TxtTable.Text = _order.TableNo ?? "";
             TxtPhone.Text = _order.CustomerPhone ?? "";
             TxtCustName.Text = _order.CustomerName ?? "";
             TxtCustAddress.Text = _order.CustomerAddress ?? "";
@@ -117,8 +331,8 @@ namespace KasaPos
 
         private void UpdateTypePanels()
         {
-            PnlMasa.Visibility = _order.OrderType == OrderTypes.Masa ? Visibility.Visible : Visibility.Collapsed;
             PnlPaket.Visibility = _order.OrderType == OrderTypes.Paket ? Visibility.Visible : Visibility.Collapsed;
+            BtnTablePlan.Visibility = _order.OrderType == OrderTypes.Masa ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void Type_Checked(object sender, RoutedEventArgs e)
@@ -126,8 +340,16 @@ namespace KasaPos
             if (_loading || _order == null) return;
             string t = RbMasa.IsChecked == true ? OrderTypes.Masa : RbPaket.IsChecked == true ? OrderTypes.Paket : OrderTypes.GelAl;
             if (t == _order.OrderType) return;
+
+            // Boş yeni siparişte Masa seçilirse masa planını aç
+            if (t == OrderTypes.Masa && _order.Id == 0 && _order.Items.Count == 0)
+            {
+                NewOrder(OrderTypes.Masa);
+                return;
+            }
+
             _order.OrderType = t;
-            // Fiyatları yeni sipariş türüne göre güncelle
+            if (t != OrderTypes.Masa) _order.TableNo = null;
             foreach (var it in _order.Items)
             {
                 var p = _products.FirstOrDefault(x => x.Id == it.ProductId);
@@ -136,12 +358,30 @@ namespace KasaPos
             UpdateTypePanels();
             RefreshCart();
             ShowProducts();
-            if (t == OrderTypes.Masa) TxtTable.Focus();
+            if (t == OrderTypes.Masa && string.IsNullOrEmpty(_order.TableNo))
+            {
+                // Sepetli siparişi masaya almak için masa seçtir
+                var name = InputDialog.Ask(this, "Masa", "Bu sipariş hangi masaya yazılsın?");
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    _order.OrderType = OrderTypes.GelAl;
+                    LoadOrderIntoUi();
+                    return;
+                }
+                _order.TableNo = name.Trim();
+                RefreshCart();
+            }
+            ShowView(false);
             if (t == OrderTypes.Paket) TxtPhone.Focus();
         }
 
         private void AddProduct(Product p)
         {
+            if (_order.OrderType == OrderTypes.Masa && string.IsNullOrEmpty(_order.TableNo))
+            {
+                ShowView(true);
+                return;
+            }
             var existing = _order.Items.FirstOrDefault(i => i.ProductId == p.Id && string.IsNullOrEmpty(i.Note));
             if (existing != null) existing.Qty += 1;
             else _order.Items.Add(new OrderItem { ProductId = p.Id, Name = p.Name, Qty = 1, UnitPrice = p.PriceFor(_order.OrderType) });
@@ -156,10 +396,18 @@ namespace KasaPos
             LstCart.ItemsSource = null;
             LstCart.ItemsSource = _order.Items;
             if (sel != null && _order.Items.Contains(sel)) LstCart.SelectedItem = sel;
+            TxtEmptyCart.Visibility = _order.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             TxtSubtotal.Text = Money.FmtTl(_order.Subtotal);
             TxtDiscount.Text = _order.Discount > 0 ? "-" + Money.FmtTl(_order.Discount) : "-";
             TxtTotal.Text = Money.FmtTl(_order.Total);
-            TxtOrderTitle.Text = _order.Id == 0 ? "Yeni Sipariş" : "Sipariş #" + _order.Id;
+
+            string title;
+            if (_order.OrderType == OrderTypes.Masa)
+                title = string.IsNullOrEmpty(_order.TableNo) ? "Masa seç" : "Masa " + _order.TableNo;
+            else
+                title = _order.Id == 0 ? "Yeni Sipariş" : "Sipariş #" + _order.Id;
+            TxtOrderTitle.Text = title;
+            TxtTypeBadge.Text = OrderTypes.Label(_order.OrderType) + (_order.Id > 0 ? "  #" + _order.Id : "");
             TxtOrderNote.Text = string.IsNullOrWhiteSpace(_order.Note) ? "" : "Not: " + _order.Note;
         }
 
@@ -215,7 +463,6 @@ namespace KasaPos
             if (it == null) return;
             var s = InputDialog.Ask(this, "Ürün Notu", it.Name + " için not (ör. acısız, soğansız):", it.Note);
             if (s == null) return;
-            // Tek adetten fazlaysa notu bir adet için ayır
             if (it.Qty > 1 && string.IsNullOrEmpty(it.Note) && !string.IsNullOrWhiteSpace(s))
             {
                 it.Qty -= 1;
@@ -278,7 +525,6 @@ namespace KasaPos
             TxtCustAddress.Text = c.Address;
         }
 
-        /// <summary>Ekrandaki bilgileri siparişe aktarır, eksik varsa uyarır.</summary>
         private bool CollectAndValidate()
         {
             if (_order.Items.Count == 0)
@@ -286,23 +532,26 @@ namespace KasaPos
                 MessageBox.Show("Sepet boş.", Title);
                 return false;
             }
-            _order.TableNo = null;
             _order.CustomerId = null;
             if (_order.OrderType == OrderTypes.Masa)
             {
-                var t = TxtTable.Text.Trim();
+                var t = (_order.TableNo ?? "").Trim();
                 if (t == "")
                 {
-                    MessageBox.Show("Masa numarasını gir.", Title);
-                    TxtTable.Focus();
+                    MessageBox.Show("Önce masa planından bir masa seç.", Title);
+                    ShowView(true);
                     return false;
                 }
                 if (OrderRepo.TableIsBusy(t, _order.Id))
                 {
-                    MessageBox.Show("Masa " + t + " için zaten açık bir sipariş var. Soldaki listeden o siparişi aç.", Title);
+                    MessageBox.Show("Masa " + t + " için zaten açık bir sipariş var. Masa planından o masayı aç.", Title);
                     return false;
                 }
                 _order.TableNo = t;
+            }
+            else
+            {
+                _order.TableNo = null;
             }
             if (_order.OrderType == OrderTypes.Paket)
             {
@@ -342,11 +591,12 @@ namespace KasaPos
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
             if (!CollectAndValidate()) return;
+            string type = _order.OrderType;
             _order.Status = "OPEN";
             OrderRepo.Save(_order);
             SendToKitchenIfEnabled();
-            OrderRepo.Save(_order); // yazdırılan miktarları kaydet
-            NewOrder();
+            OrderRepo.Save(_order);
+            NewOrder(type);
             RefreshOpenOrders();
         }
 
@@ -363,6 +613,7 @@ namespace KasaPos
             var dlg = new PaymentWindow(_order.Total) { Owner = this };
             if (dlg.ShowDialog() != true) return;
 
+            string type = _order.OrderType;
             _order.Payments = dlg.Payments;
             _order.Status = "PAID";
             _order.PaidAt = DateTime.Now;
@@ -376,37 +627,41 @@ namespace KasaPos
                 var err = Printer.PrintReceipt(_order, dlg.Change);
                 if (err != null) MessageBox.Show("Fiş yazdırılamadı: " + err, Title);
             }
-            NewOrder();
+            NewOrder(type);
             RefreshOpenOrders();
         }
 
         private void BtnCancel_Click(object sender, RoutedEventArgs e)
         {
+            string type = _order.OrderType;
             if (_order.Id == 0)
             {
                 if (_order.Items.Count > 0 &&
                     MessageBox.Show("Sepet temizlensin mi?", Title, MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
-                NewOrder();
+                NewOrder(type);
                 return;
             }
             if (MessageBox.Show("Sipariş #" + _order.Id + " iptal edilsin mi?", Title, MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
             OrderRepo.SetStatus(_order.Id, "CANCELLED");
-            NewOrder();
+            NewOrder(type);
             RefreshOpenOrders();
         }
 
         private void BtnNew_Click(object sender, RoutedEventArgs e)
         {
-            NewOrder();
-            LstOpen.SelectedItem = null;
+            if (!ConfirmLeaveUnsaved()) return;
+            NewOrder(OrderTypes.GelAl);
         }
 
         private void RefreshOpenOrders()
         {
             _loading = true;
-            LstOpen.ItemsSource = OrderRepo.Open();
+            var list = OrderRepo.Open();
+            LstOpen.ItemsSource = list;
             LstOpen.SelectedItem = null;
+            TxtOpenCount.Text = list.Count + " adet";
             _loading = false;
+            if (ViewTables.Visibility == Visibility.Visible) ShowTables();
         }
 
         private void LstOpen_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -414,16 +669,30 @@ namespace KasaPos
             if (_loading) return;
             var o = LstOpen.SelectedItem as Order;
             if (o == null) return;
+            if (!ConfirmLeaveUnsaved())
+            {
+                _loading = true;
+                LstOpen.SelectedItem = null;
+                _loading = false;
+                return;
+            }
             _order = OrderRepo.Get(o.Id);
             LoadOrderIntoUi();
+            ShowView(false);
         }
 
-        // ---------------- Üst menü ----------------
+        // ================= Üst menü =================
 
         private void BtnMenu_Click(object sender, RoutedEventArgs e)
         {
             new MenuWindow { Owner = this }.ShowDialog();
             ReloadMenu();
+        }
+
+        private void BtnTables_Click(object sender, RoutedEventArgs e)
+        {
+            new TablesWindow { Owner = this }.ShowDialog();
+            if (ViewTables.Visibility == Visibility.Visible) ShowTables();
         }
 
         private void BtnCustomers_Click(object sender, RoutedEventArgs e)
@@ -455,7 +724,7 @@ namespace KasaPos
             {
                 App.CurrentUser = login.User;
                 ApplyUser();
-                if (_order.Id == 0 && _order.Items.Count == 0) NewOrder();
+                if (_order.Id == 0 && _order.Items.Count == 0) NewOrder(_order.OrderType);
                 Show();
             }
             else

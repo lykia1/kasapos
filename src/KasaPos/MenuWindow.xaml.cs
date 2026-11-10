@@ -28,6 +28,8 @@ namespace KasaPos
         {
             InitializeComponent();
             ChkSamePrice.IsChecked = Settings.GetBool("same_price_masa_gelal", true);
+            ColColor.ItemsSource = Palette.Names;
+            foreach (var n in Palette.Names) CmbCatColor.Items.Add(n == "" ? "(renksiz)" : n);
             LoadCategories();
             Closing += (s, e) => SaveCurrent(false);
         }
@@ -58,6 +60,53 @@ namespace KasaPos
             _products = c == null ? new ObservableCollection<Product>() : new ObservableCollection<Product>(MenuRepo.Products(false, c.Id));
             GridProducts.ItemsSource = _products;
             GridProducts.IsEnabled = c != null;
+            _switching = true;
+            int idx = c == null ? 0 : Array.IndexOf(Palette.Names, c.Color ?? "");
+            CmbCatColor.SelectedIndex = idx < 0 ? 0 : idx;
+            CmbCatColor.IsEnabled = c != null;
+            _switching = false;
+        }
+
+        private void CmbCatColor_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_switching || _current == null || CmbCatColor.SelectedIndex < 0) return;
+            _current.Color = Palette.Names[CmbCatColor.SelectedIndex];
+            MenuRepo.SaveCategory(_current);
+        }
+
+        private void ImageAdd_Click(object sender, RoutedEventArgs e)
+        {
+            var p = GridProducts.SelectedItem as Product;
+            if (p == null || string.IsNullOrWhiteSpace(p.Name))
+            {
+                MessageBox.Show("Önce tablodan bir ürün seç.", Title);
+                return;
+            }
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = p.Name + " için görsel seç",
+                Filter = "Görseller (*.jpg;*.jpeg;*.png;*.bmp;*.webp)|*.jpg;*.jpeg;*.png;*.bmp;*.webp"
+            };
+            if (dlg.ShowDialog(this) != true) return;
+            try
+            {
+                p.Image = ImageCache.Import(dlg.FileName);
+                SaveCurrent(false);
+                ShowCategory(_current);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Görsel eklenemedi: " + ex.Message, Title);
+            }
+        }
+
+        private void ImageRemove_Click(object sender, RoutedEventArgs e)
+        {
+            var p = GridProducts.SelectedItem as Product;
+            if (p == null || !p.HasImage) return;
+            p.Image = null;
+            SaveCurrent(false);
+            ShowCategory(_current);
         }
 
         private bool SaveCurrent(bool showMessage)

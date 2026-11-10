@@ -37,7 +37,17 @@ namespace KasaPos.Data
         public string Name { get; set; }
         public int Sort { get; set; }
         public bool Active { get; set; } = true;
+        public string Color { get; set; }
         public override string ToString() => Name;
+    }
+
+    public class DiningTable
+    {
+        public long Id { get; set; }
+        public string Area { get; set; } = "Salon";
+        public string Name { get; set; }
+        public int Sort { get; set; }
+        public bool Active { get; set; } = true;
     }
 
     public class Product
@@ -50,6 +60,9 @@ namespace KasaPos.Data
         public decimal PricePaket { get; set; }
         public int Sort { get; set; }
         public bool Active { get; set; } = true;
+        public string Color { get; set; }
+        public string Image { get; set; }
+        public bool HasImage => !string.IsNullOrEmpty(Image);
 
         public decimal PriceFor(string orderType)
         {

@@ -20,6 +20,8 @@
                     <Button Content="▼ Aşağı" Click="CatDown_Click"/>
                 </UniformGrid>
                 <Button Content="Kategoriyi Gizle / Göster" Click="CatToggle_Click"/>
+                <TextBlock Text="Kategori rengi" Style="{StaticResource Label}"/>
+                <ComboBox x:Name="CmbCatColor" SelectionChanged="CmbCatColor_SelectionChanged"/>
             </StackPanel>
             <ListBox x:Name="LstCats" FontSize="16" SelectionChanged="LstCats_SelectionChanged" Margin="3">
                 <ListBox.ItemTemplate>
@@ -40,16 +42,24 @@
                            TextWrapping="Wrap" Foreground="#52606D" Margin="4,0,4,6"/>
                 <CheckBox x:Name="ChkSamePrice" Content="Masa ve Al Götür fiyatı aynı olsun (Masa fiyatını yazman yeterli)" IsChecked="True"/>
             </StackPanel>
-            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Kapat" Width="120" IsCancel="True"/>
-                <Button Content="Kaydet" Width="160" Style="{StaticResource AccentButton}" Click="Save_Click"/>
-            </StackPanel>
+            <DockPanel DockPanel.Dock="Bottom">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="Kapat" Width="120" IsCancel="True"/>
+                    <Button Content="Kaydet" Width="160" Style="{StaticResource AccentButton}" Click="Save_Click"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Seçili Ürüne Görsel Ekle" Click="ImageAdd_Click"/>
+                    <Button Content="Görseli Kaldır" Click="ImageRemove_Click"/>
+                </StackPanel>
+            </DockPanel>
             <DataGrid x:Name="GridProducts" CanUserAddRows="True" CanUserDeleteRows="False">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Ürün adı" Binding="{Binding Name}" Width="*"/>
                     <DataGridTextColumn Header="Masa ₺" Binding="{Binding PriceMasa, StringFormat=N2}" Width="110"/>
                     <DataGridTextColumn Header="Al Götür ₺" Binding="{Binding PriceGelAl, StringFormat=N2}" Width="110"/>
                     <DataGridTextColumn Header="Paket ₺" Binding="{Binding PricePaket, StringFormat=N2}" Width="110"/>
+                    <DataGridComboBoxColumn x:Name="ColColor" Header="Renk" SelectedItemBinding="{Binding Color}" Width="110"/>
+                    <DataGridCheckBoxColumn Header="Görsel" Binding="{Binding HasImage, Mode=OneWay}" IsReadOnly="True" Width="65"/>
                     <DataGridTextColumn Header="Sıra" Binding="{Binding Sort}" Width="60"/>
                     <DataGridCheckBoxColumn Header="Satışta" Binding="{Binding Active}" Width="70"/>
                 </DataGrid.Columns>

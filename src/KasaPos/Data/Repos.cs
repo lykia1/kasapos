@@ -40,7 +40,8 @@ namespace KasaPos.Data
                 Id = Db.L(r, "id"),
                 Name = Db.S(r, "name"),
                 Sort = (int)Db.L(r, "sort"),
-                Active = Db.B(r, "active")
+                Active = Db.B(r, "active"),
+                Color = Db.S(r, "color")
             });
 
         public static List<Product> Products(bool onlyActive = true, long? categoryId = null)
@@ -58,7 +59,9 @@ namespace KasaPos.Data
                 PriceGelAl = Db.D(r, "price_gelal"),
                 PricePaket = Db.D(r, "price_paket"),
                 Sort = (int)Db.L(r, "sort"),
-                Active = Db.B(r, "active")
+                Active = Db.B(r, "active"),
+                Color = Db.S(r, "color"),
+                Image = Db.S(r, "image")
             }, ("@c", categoryId ?? 0));
         }
 
@@ -67,22 +70,22 @@ namespace KasaPos.Data
             if (c.Id == 0)
             {
                 using (var con = Db.Open())
-                    return Db.Insert(con, null, "INSERT INTO categories(name,sort,active) VALUES(@n,@s,@a)",
-                        ("@n", c.Name), ("@s", c.Sort), ("@a", c.Active));
+                    return Db.Insert(con, null, "INSERT INTO categories(name,sort,active,color) VALUES(@n,@s,@a,@col)",
+                        ("@n", c.Name), ("@s", c.Sort), ("@a", c.Active), ("@col", c.Color));
             }
-            Db.Exec("UPDATE categories SET name=@n,sort=@s,active=@a WHERE id=@id",
-                ("@n", c.Name), ("@s", c.Sort), ("@a", c.Active), ("@id", c.Id));
+            Db.Exec("UPDATE categories SET name=@n,sort=@s,active=@a,color=@col WHERE id=@id",
+                ("@n", c.Name), ("@s", c.Sort), ("@a", c.Active), ("@col", c.Color), ("@id", c.Id));
             return c.Id;
         }
 
         public static void SaveProduct(Product p)
         {
             if (p.Id == 0)
-                Db.Exec("INSERT INTO products(category_id,name,price_masa,price_gelal,price_paket,sort,active) VALUES(@c,@n,@pm,@pg,@pp,@s,@a)",
-                    ("@c", p.CategoryId), ("@n", p.Name), ("@pm", p.PriceMasa), ("@pg", p.PriceGelAl), ("@pp", p.PricePaket), ("@s", p.Sort), ("@a", p.Active));
+                Db.Exec("INSERT INTO products(category_id,name,price_masa,price_gelal,price_paket,sort,active,color,image) VALUES(@c,@n,@pm,@pg,@pp,@s,@a,@col,@img)",
+                    ("@c", p.CategoryId), ("@n", p.Name), ("@pm", p.PriceMasa), ("@pg", p.PriceGelAl), ("@pp", p.PricePaket), ("@s", p.Sort), ("@a", p.Active), ("@col", p.Color), ("@img", p.Image));
             else
-                Db.Exec("UPDATE products SET category_id=@c,name=@n,price_masa=@pm,price_gelal=@pg,price_paket=@pp,sort=@s,active=@a WHERE id=@id",
-                    ("@c", p.CategoryId), ("@n", p.Name), ("@pm", p.PriceMasa), ("@pg", p.PriceGelAl), ("@pp", p.PricePaket), ("@s", p.Sort), ("@a", p.Active), ("@id", p.Id));
+                Db.Exec("UPDATE products SET category_id=@c,name=@n,price_masa=@pm,price_gelal=@pg,price_paket=@pp,sort=@s,active=@a,color=@col,image=@img WHERE id=@id",
+                    ("@c", p.CategoryId), ("@n", p.Name), ("@pm", p.PriceMasa), ("@pg", p.PriceGelAl), ("@pp", p.PricePaket), ("@s", p.Sort), ("@a", p.Active), ("@col", p.Color), ("@img", p.Image), ("@id", p.Id));
         }
 
         /// <summary>İlk kurulumda isteğe bağlı örnek döner menüsü.</summary>
@@ -99,11 +102,51 @@ namespace KasaPos.Data
             int cs = 0;
             foreach (var cat in data)
             {
-                long cid = SaveCategory(new Category { Name = cat.cat, Sort = cs++ });
+                long cid = SaveCategory(new Category { Name = cat.cat, Sort = cs, Color = Palette.Names[1 + (cs % (Palette.Names.Length - 1))] });
+                cs++;
                 int ps = 0;
+                var catColor = Palette.Names[1 + ((cs - 1) % (Palette.Names.Length - 1))];
                 foreach (var it in cat.items)
-                    SaveProduct(new Product { CategoryId = cid, Name = it.name, PriceMasa = it.masa, PriceGelAl = it.masa, PricePaket = it.paket, Sort = ps++ });
+                    SaveProduct(new Product { CategoryId = cid, Name = it.name, PriceMasa = it.masa, PriceGelAl = it.masa, PricePaket = it.paket, Sort = ps++, Color = catColor });
             }
+        }
+    }
+
+    public static class TableRepo
+    {
+        public static List<DiningTable> All(bool onlyActive = true) =>
+            Db.Query("SELECT * FROM dining_tables" + (onlyActive ? " WHERE active=1" : "") + " ORDER BY area, sort, id", r => new DiningTable
+            {
+                Id = Db.L(r, "id"),
+                Area = Db.S(r, "area"),
+                Name = Db.S(r, "name"),
+                Sort = (int)Db.L(r, "sort"),
+                Active = Db.B(r, "active")
+            });
+
+        public static void Save(DiningTable t)
+        {
+            if (t.Id == 0)
+                Db.Exec("INSERT INTO dining_tables(area,name,sort,active) VALUES(@a,@n,@s,@ac)",
+                    ("@a", t.Area ?? "Salon"), ("@n", t.Name), ("@s", t.Sort), ("@ac", t.Active));
+            else
+                Db.Exec("UPDATE dining_tables SET area=@a,name=@n,sort=@s,active=@ac WHERE id=@id",
+                    ("@a", t.Area ?? "Salon"), ("@n", t.Name), ("@s", t.Sort), ("@ac", t.Active), ("@id", t.Id));
+        }
+
+        /// <summary>Toplu masa ekler (ör. Bahçe bölümüne B1..B10). Var olan adları atlar.</summary>
+        public static int BulkAdd(string area, string prefix, int start, int count)
+        {
+            var existing = new HashSet<string>(All(false).Select(t => t.Name), StringComparer.OrdinalIgnoreCase);
+            int added = 0;
+            for (int i = 0; i < count; i++)
+            {
+                string name = (prefix ?? "") + (start + i);
+                if (existing.Contains(name)) continue;
+                Save(new DiningTable { Area = string.IsNullOrWhiteSpace(area) ? "Salon" : area.Trim(), Name = name, Sort = start + i, Active = true });
+                added++;
+            }
+            return added;
         }
     }
 

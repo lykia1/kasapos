@@ -26,23 +26,23 @@ jobs:
           dotnet publish src/KasaPos/KasaPos.csproj -c Release -r win-x64 --self-contained true \
             -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
             -p:EnableCompressionInSingleFile=true -p:DebugType=none \
-            -p:Version=0.1.${{ github.run_number }} -o out 2>&1 | tee build.log
+            -p:Version=0.2.${{ github.run_number }} -o out 2>&1 | tee build.log
 
       - name: Paketle
         shell: pwsh
         run: |
-          Compress-Archive -Path out/KasaPOS.exe -DestinationPath KasaPOS-v0.1.${{ github.run_number }}.zip
+          Compress-Archive -Path out/KasaPOS.exe -DestinationPath KasaPOS-v0.2.${{ github.run_number }}.zip
 
       - name: Sürüm yayınla
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.${{ github.run_number }}
-          name: KasaPOS v0.1.${{ github.run_number }}
+          tag_name: v0.2.${{ github.run_number }}
+          name: KasaPOS v0.2.${{ github.run_number }}
           body: |
             Otomatik derleme. Kurulum: zip içindeki KasaPOS.exe'yi masaüstüne çıkar ve çalıştır.
             Windows "bilgisayarınız korundu" uyarısı verirse "Ek bilgi" > "Yine de çalıştır".
           files: |
-            KasaPOS-v0.1.${{ github.run_number }}.zip
+            KasaPOS-v0.2.${{ github.run_number }}.zip
             out/KasaPOS.exe
 
       - name: Derleme kaydını ci-log dalına yaz
@@ -63,3 +63,17 @@ jobs:
           git checkout -q -b ci-log
           git add status.txt && git commit -qm "run ${{ github.run_number }} ${{ job.status }}"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-log
+
+      - name: Hata kaydı (issue)
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "Derleme #${{ github.run_number }} başarısız."
+            echo '```'
+            if [ -f build.log ]; then grep -E "error|Error" build.log | sed 's#.*src/KasaPos/#src/KasaPos/#' | sort -u | head -120; fi
+            echo '```'
+          } > err.md
+          gh issue create --repo "${{ github.repository }}" --title "Derleme hatası #${{ github.run_number }}" --body-file err.md

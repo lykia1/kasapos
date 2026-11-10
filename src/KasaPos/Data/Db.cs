@@ -116,6 +116,18 @@ CREATE INDEX IF NOT EXISTS ix_pay_order ON payments(order_id);
                 cmd.ExecuteNonQuery();
             }
 
+            // v0.2 eklemeleri
+            Exec(@"CREATE TABLE IF NOT EXISTS dining_tables (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  area TEXT NOT NULL DEFAULT 'Salon',
+  name TEXT NOT NULL UNIQUE,
+  sort INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1)");
+            EnsureColumn("products", "color", "TEXT");
+            EnsureColumn("products", "image", "TEXT");
+            EnsureColumn("categories", "color", "TEXT");
+            Directory.CreateDirectory(ImageDir);
+
             if (Convert.ToInt64(Scalar("SELECT COUNT(*) FROM payment_types")) == 0)
             {
                 var defaults = new[] { "Nakit", "Kredi Kartı", "Multinet", "Pluxee (Sodexo)", "Edenred (Ticket)", "Setcard", "Metropol", "Açık Hesap" };
@@ -123,6 +135,15 @@ CREATE INDEX IF NOT EXISTS ix_pay_order ON payments(order_id);
                     Exec("INSERT INTO payment_types(name,is_cash,sort) VALUES(@n,@c,@s)",
                         ("@n", defaults[i]), ("@c", i == 0 ? 1 : 0), ("@s", i));
             }
+        }
+
+        public static string ImageDir => Path.Combine(DataDir, "Gorseller");
+
+        private static void EnsureColumn(string table, string column, string type)
+        {
+            var cols = Query("SELECT name FROM pragma_table_info('" + table + "')", r => r.GetString(0));
+            if (!cols.Any(c => string.Equals(c, column, StringComparison.OrdinalIgnoreCase)))
+                Exec("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
         }
 
         private static void AddParams(SqliteCommand cmd, (string, object)[] p)
