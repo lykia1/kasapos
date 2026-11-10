@@ -75,6 +75,24 @@ namespace KasaPos.Data
         }
     }
 
+    public class Courier
+    {
+        public long Id { get; set; }
+        public string Name { get; set; }
+        public string Phone { get; set; }
+        public bool Active { get; set; } = true;
+    }
+
+    public class KitchenTicket
+    {
+        public long Id { get; set; }
+        public long OrderId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string Title { get; set; }
+        public string Body { get; set; }
+        public string Status { get; set; }
+    }
+
     public class PaymentType
     {
         public long Id { get; set; }
@@ -134,6 +152,9 @@ namespace KasaPos.Data
         public long UserId { get; set; }
         public string UserName { get; set; }
         public string Note { get; set; }
+        public long? CourierId { get; set; }
+        public string CourierName { get; set; }
+        public DateTime? DispatchedAt { get; set; }
         public List<OrderItem> Items { get; set; } = new List<OrderItem>();
         public List<Payment> Payments { get; set; } = new List<Payment>();
 
@@ -149,7 +170,10 @@ namespace KasaPos.Data
                 else if (OrderType == OrderTypes.Paket)
                     head = "Paket: " + (string.IsNullOrWhiteSpace(CustomerName) ? CustomerPhone : CustomerName);
                 else head = "Al Götür #" + Id;
-                return head + "\n" + Money.FmtTl(Total) + "  ·  " + CreatedAt.ToString("HH:mm");
+                string line = head + "\n" + Money.FmtTl(Total) + "  ·  " + CreatedAt.ToString("HH:mm");
+                if (!string.IsNullOrEmpty(CourierName) && DispatchedAt.HasValue)
+                    line += "\n🛵 " + CourierName + " · " + (int)Math.Max(0, (DateTime.Now - DispatchedAt.Value).TotalMinutes) + " dk";
+                return line;
             }
         }
     }

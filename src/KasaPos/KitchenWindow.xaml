@@ -1,0 +1,25 @@
+<Window x:Class="KasaPos.KitchenWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Mutfak Ekranı" Width="1200" Height="760" WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI" Background="#15181C">
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="#1F242A" Padding="14,8">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="Son Hazırı Geri Al" Style="{StaticResource TopButton}" Click="Undo_Click"/>
+                    <Button x:Name="BtnFull" Content="Tam Ekran" Style="{StaticResource TopButton}" Click="Full_Click"/>
+                    <Button Content="Kapat" Style="{StaticResource TopButton}" Click="Close_Click"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="MUTFAK" Foreground="White" FontSize="22" FontWeight="Bold"/>
+                    <TextBlock x:Name="TxtCount" Foreground="#ADB5BD" FontSize="16" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TxtClock" Foreground="White" FontSize="18" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8">
+            <WrapPanel x:Name="PnlTickets"/>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

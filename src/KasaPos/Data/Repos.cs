@@ -150,6 +150,64 @@ namespace KasaPos.Data
         }
     }
 
+    public static class CourierRepo
+    {
+        public static List<Courier> All(bool onlyActive = true) =>
+            Db.Query("SELECT * FROM couriers" + (onlyActive ? " WHERE active=1" : "") + " ORDER BY name", r => new Courier
+            {
+                Id = Db.L(r, "id"),
+                Name = Db.S(r, "name"),
+                Phone = Db.S(r, "phone"),
+                Active = Db.B(r, "active")
+            });
+
+        public static void Save(Courier c)
+        {
+            if (c.Id == 0)
+                Db.Exec("INSERT INTO couriers(name,phone,active) VALUES(@n,@p,@a)", ("@n", c.Name), ("@p", c.Phone), ("@a", c.Active));
+            else
+                Db.Exec("UPDATE couriers SET name=@n,phone=@p,active=@a WHERE id=@id", ("@n", c.Name), ("@p", c.Phone), ("@a", c.Active), ("@id", c.Id));
+        }
+    }
+
+    public static class KitchenRepo
+    {
+        private const string Iso = "yyyy-MM-dd HH:mm:ss";
+
+        public static void Add(long orderId, string title, string body) =>
+            Db.Exec("INSERT INTO kitchen_tickets(order_id,created_at,title,body,status) VALUES(@o,@c,@t,@b,'NEW')",
+                ("@o", orderId), ("@c", DateTime.Now.ToString(Iso, CultureInfo.InvariantCulture)), ("@t", title), ("@b", body));
+
+        public static List<KitchenTicket> Pending() =>
+            Db.Query("SELECT * FROM kitchen_tickets WHERE status='NEW' ORDER BY id", r => new KitchenTicket
+            {
+                Id = Db.L(r, "id"),
+                OrderId = Db.L(r, "order_id"),
+                CreatedAt = DateTime.ParseExact(Db.S(r, "created_at"), Iso, CultureInfo.InvariantCulture),
+                Title = Db.S(r, "title"),
+                Body = Db.S(r, "body"),
+                Status = Db.S(r, "status")
+            });
+
+        public static void Done(long id) =>
+            Db.Exec("UPDATE kitchen_tickets SET status='DONE', done_at=@d WHERE id=@id",
+                ("@d", DateTime.Now.ToString(Iso, CultureInfo.InvariantCulture)), ("@id", id));
+
+        /// <summary>En son hazır işaretleneni geri getirir.</summary>
+        public static bool UndoLast()
+        {
+            var id = Db.Scalar("SELECT id FROM kitchen_tickets WHERE status='DONE' ORDER BY done_at DESC, id DESC LIMIT 1");
+            if (id == null) return false;
+            Db.Exec("UPDATE kitchen_tickets SET status='NEW', done_at=NULL WHERE id=@id", ("@id", Convert.ToInt64(id)));
+            return true;
+        }
+
+        /// <summary>Bir günden eski kayıtları temizler.</summary>
+        public static void Cleanup() =>
+            Db.Exec("DELETE FROM kitchen_tickets WHERE created_at < @d",
+                ("@d", DateTime.Now.AddDays(-2).ToString(Iso, CultureInfo.InvariantCulture)));
+    }
+
     public static class PaymentRepo
     {
         public static List<PaymentType> Types(bool onlyActive = true) =>
@@ -259,6 +317,11 @@ namespace KasaPos.Data
             };
             long cid = Db.L(r, "customer_id");
             o.CustomerId = cid == 0 ? (long?)null : cid;
+            o.CourierName = Db.S(r, "courier_name");
+            long cour = Db.L(r, "courier_id");
+            o.CourierId = cour == 0 ? (long?)null : cour;
+            var disp = Db.S(r, "dispatched_at");
+            if (!string.IsNullOrEmpty(disp)) o.DispatchedAt = DateTime.ParseExact(disp, Iso, CultureInfo.InvariantCulture);
             var paid = Db.S(r, "paid_at");
             if (!string.IsNullOrEmpty(paid)) o.PaidAt = DateTime.ParseExact(paid, Iso, CultureInfo.InvariantCulture);
             return o;
@@ -308,19 +371,21 @@ namespace KasaPos.Data
                     ("@bd", o.BusinessDay), ("@ot", o.OrderType), ("@tn", o.TableNo),
                     ("@cid", o.CustomerId), ("@cn", o.CustomerName), ("@cp", o.CustomerPhone), ("@cad", o.CustomerAddress),
                     ("@st", o.Subtotal), ("@dc", o.Discount), ("@tt", o.Total), ("@s", o.Status),
-                    ("@uid", o.UserId), ("@un", o.UserName), ("@nt", o.Note)
+                    ("@uid", o.UserId), ("@un", o.UserName), ("@nt", o.Note),
+                    ("@coid", o.CourierId), ("@con", o.CourierName),
+                    ("@dsp", o.DispatchedAt.HasValue ? o.DispatchedAt.Value.ToString(Iso, CultureInfo.InvariantCulture) : null)
                 };
                 if (o.Id == 0)
                 {
-                    o.Id = Db.Insert(c, tx, @"INSERT INTO orders(created_at,paid_at,business_day,order_type,table_no,customer_id,customer_name,customer_phone,customer_address,subtotal,discount,total,status,user_id,user_name,note)
-VALUES(@ca,@pa,@bd,@ot,@tn,@cid,@cn,@cp,@cad,@st,@dc,@tt,@s,@uid,@un,@nt)", p);
+                    o.Id = Db.Insert(c, tx, @"INSERT INTO orders(created_at,paid_at,business_day,order_type,table_no,customer_id,customer_name,customer_phone,customer_address,subtotal,discount,total,status,user_id,user_name,note,courier_id,courier_name,dispatched_at)
+VALUES(@ca,@pa,@bd,@ot,@tn,@cid,@cn,@cp,@cad,@st,@dc,@tt,@s,@uid,@un,@nt,@coid,@con,@dsp)", p);
                 }
                 else
                 {
                     var p2 = p.ToList();
                     p2.Add(("@id", o.Id));
                     Db.Exec(c, tx, @"UPDATE orders SET created_at=@ca,paid_at=@pa,business_day=@bd,order_type=@ot,table_no=@tn,customer_id=@cid,customer_name=@cn,customer_phone=@cp,customer_address=@cad,
-subtotal=@st,discount=@dc,total=@tt,status=@s,user_id=@uid,user_name=@un,note=@nt WHERE id=@id", p2.ToArray());
+subtotal=@st,discount=@dc,total=@tt,status=@s,user_id=@uid,user_name=@un,note=@nt,courier_id=@coid,courier_name=@con,dispatched_at=@dsp WHERE id=@id", p2.ToArray());
                     Db.Exec(c, tx, "DELETE FROM order_items WHERE order_id=@id", ("@id", o.Id));
                     Db.Exec(c, tx, "DELETE FROM payments WHERE order_id=@id", ("@id", o.Id));
                 }
@@ -336,6 +401,23 @@ subtotal=@st,discount=@dc,total=@tt,status=@s,user_id=@uid,user_name=@un,note=@n
                 }
                 tx.Commit();
             }
+        }
+
+        public static void MoveTable(long orderId, string newTable) =>
+            Db.Exec("UPDATE orders SET table_no=@t WHERE id=@id", ("@t", newTable), ("@id", orderId));
+
+        /// <summary>Kaynak siparişin kalemlerini hedefe taşır, kaynağı 'MERGED' yapar.</summary>
+        public static void Merge(long sourceId, long targetId)
+        {
+            using (var c = Db.Open())
+            using (var tx = c.BeginTransaction())
+            {
+                Db.Exec(c, tx, "UPDATE order_items SET order_id=@t WHERE order_id=@s", ("@t", targetId), ("@s", sourceId));
+                Db.Exec(c, tx, "UPDATE orders SET status='MERGED', note=COALESCE(note,'') || ' [#' || @t || ' ile birleşti]' WHERE id=@s", ("@t", targetId), ("@s", sourceId));
+                tx.Commit();
+            }
+            var target = Get(targetId);
+            if (target != null) Save(target);
         }
 
         public static void SetStatus(long id, string status) =>

@@ -1,0 +1,20 @@
+<Window x:Class="KasaPos.ChoiceDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Seç" Width="640" Height="520" WindowStartupLocation="CenterOwner"
+        FontFamily="Segoe UI" Background="{StaticResource PanelBg}">
+    <DockPanel Margin="14">
+        <TextBlock x:Name="TxtPrompt" DockPanel.Dock="Top" Style="{StaticResource H1}" TextWrapping="Wrap"/>
+        <DockPanel DockPanel.Dock="Bottom">
+            <Button DockPanel.Dock="Right" Content="Vazgeç" Width="120" IsCancel="True"/>
+            <StackPanel x:Name="PnlManual" Orientation="Horizontal" Visibility="Collapsed">
+                <TextBlock x:Name="TxtManualLabel" VerticalAlignment="Center" Foreground="{StaticResource TextSub}" Margin="4,0"/>
+                <TextBox x:Name="TxtManual" Width="140"/>
+                <Button Content="Tamam" Style="{StaticResource AccentButton}" Click="Manual_Click"/>
+            </StackPanel>
+        </DockPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <WrapPanel x:Name="PnlChoices"/>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

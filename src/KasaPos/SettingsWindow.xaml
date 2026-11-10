@@ -32,6 +32,8 @@
                     <ComboBox x:Name="CmbKitchen"/>
                     <CheckBox x:Name="ChkReceiptAuto" Content="Ödeme sonrası fişi otomatik yazdır"/>
                     <CheckBox x:Name="ChkKitchenAuto" Content="Kaydet ve ödemede mutfak fişini otomatik yazdır (yalnızca yeni eklenenler)"/>
+                    <CheckBox x:Name="ChkKitchenScreen" Content="Siparişleri Mutfak Ekranına da gönder (üst bardaki 'Mutfak Ekranı')"/>
+                    <CheckBox x:Name="ChkCourierPrint" Content="Kurye atanınca paket fişini yazdır"/>
                     <Grid Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition/>
@@ -66,6 +68,20 @@
                             <DataGridTextColumn Header="Ad" Binding="{Binding Name}" Width="*"/>
                             <DataGridTextColumn Header="Şifre (PIN)" Binding="{Binding Pin}" Width="140"/>
                             <DataGridComboBoxColumn x:Name="ColRole" Header="Yetki" SelectedItemBinding="{Binding Role}" Width="140"/>
+                            <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Active}" Width="70"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+
+            <TabItem Header="Kuryeler">
+                <DockPanel Margin="10">
+                    <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap" Foreground="{StaticResource TextSub}" Margin="4,0,4,6"
+                               Text="Yeni kurye için en alttaki boş satırı doldur. Çalışmayan kuryenin 'Aktif' işaretini kaldır."/>
+                    <DataGrid x:Name="GridCouriers" CanUserAddRows="True" CanUserDeleteRows="False">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Ad" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="Telefon" Binding="{Binding Phone}" Width="180"/>
                             <DataGridCheckBoxColumn Header="Aktif" Binding="{Binding Active}" Width="70"/>
                         </DataGrid.Columns>
                     </DataGrid>

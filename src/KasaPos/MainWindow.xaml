@@ -11,6 +11,7 @@
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
                     <Button x:Name="BtnMenu" Content="Menü" Style="{StaticResource TopButton}" Click="BtnMenu_Click"/>
                     <Button x:Name="BtnTables" Content="Masa Düzeni" Style="{StaticResource TopButton}" Click="BtnTables_Click"/>
+                    <Button Content="Mutfak Ekranı" Style="{StaticResource TopButton}" Click="BtnKds_Click"/>
                     <Button x:Name="BtnCustomers" Content="Müşteriler" Style="{StaticResource TopButton}" Click="BtnCustomers_Click"/>
                     <Button x:Name="BtnExpenses" Content="Giderler" Style="{StaticResource TopButton}" Click="BtnExpenses_Click"/>
                     <Button x:Name="BtnReports" Content="Raporlar" Style="{StaticResource TopButton}" Click="BtnReports_Click"/>
@@ -162,6 +163,12 @@
                             <Button Content="−1" Click="BtnMinus_Click" FontWeight="Bold"/>
                             <Button Content="Adet" Click="BtnQty_Click"/>
                             <Button Content="Sil" Style="{StaticResource DangerButton}" Click="BtnRemove_Click"/>
+                        </UniformGrid>
+                        <UniformGrid Columns="4">
+                            <Button x:Name="BtnMoveTable" Content="Masa Taşı" Click="BtnMoveTable_Click" FontSize="13"/>
+                            <Button x:Name="BtnMerge" Content="Birleştir" Click="BtnMerge_Click" FontSize="13"/>
+                            <Button x:Name="BtnSplit" Content="Hesap Böl" Click="BtnSplit_Click" FontSize="13"/>
+                            <Button x:Name="BtnCourier" Content="Kurye" Click="BtnCourier_Click" FontSize="13"/>
                         </UniformGrid>
                         <UniformGrid Columns="3">
                             <Button Content="Ürün Notu" Click="BtnItemNote_Click"/>

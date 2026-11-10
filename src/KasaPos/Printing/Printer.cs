@@ -138,6 +138,7 @@ namespace KasaPos.Printing
 
         private static void OrderInfo(List<string> l, Order o)
         {
+            if (!string.IsNullOrEmpty(o.CourierName)) l.Add("#Kurye: " + o.CourierName);
             l.Add(LR("Tarih: " + DateTime.Now.ToString("dd.MM.yyyy HH:mm"), "No: " + o.Id));
             l.Add("#" + OrderTypes.Label(o.OrderType) + (o.OrderType == OrderTypes.Masa ? " " + o.TableNo : ""));
             if (o.OrderType == OrderTypes.Paket)
@@ -156,7 +157,7 @@ namespace KasaPos.Printing
             var l = Header();
             OrderInfo(l, o);
             l.Add(Line());
-            foreach (var it in o.Items)
+            foreach (var it in o.Items.Where(i => i.Qty > 0))
             {
                 l.Add(LR(it.QtyText + " x " + it.Name, Money.Fmt(it.Total)));
                 if (!string.IsNullOrWhiteSpace(it.Note)) l.Add("   " + it.Note);
@@ -185,12 +186,13 @@ namespace KasaPos.Printing
         public static string PrintKitchen(Order o, bool onlyNew = true)
         {
             var newItems = o.Items.Where(i => !onlyNew || i.Qty > i.PrintedQty).ToList();
-            if (newItems.Count == 0) return null;
+            if (newItems.Count == 0 && !o.Items.Any(i => i.PrintedQty > i.Qty)) return null;
             var printer = Settings.Get("printer_kitchen");
             if (string.IsNullOrWhiteSpace(printer)) printer = Settings.Get("printer_receipt");
             var l = new List<string>();
             l.Add("!^MUTFAK");
             l.Add("!" + OrderTypes.Label(o.OrderType) + (o.OrderType == OrderTypes.Masa ? " " + o.TableNo : " #" + o.Id));
+            if (!string.IsNullOrEmpty(o.CourierName)) l.Add("#Kurye: " + o.CourierName);
             l.Add(DateTime.Now.ToString("dd.MM.yyyy HH:mm"));
             if (o.OrderType == OrderTypes.Paket && !string.IsNullOrWhiteSpace(o.CustomerName)) l.Add(o.CustomerName);
             l.Add(Line('='));

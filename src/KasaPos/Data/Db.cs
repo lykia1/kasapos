@@ -128,6 +128,24 @@ CREATE INDEX IF NOT EXISTS ix_pay_order ON payments(order_id);
             EnsureColumn("categories", "color", "TEXT");
             Directory.CreateDirectory(ImageDir);
 
+            // v0.3 eklemeleri
+            Exec(@"CREATE TABLE IF NOT EXISTS couriers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  phone TEXT,
+  active INTEGER NOT NULL DEFAULT 1)");
+            Exec(@"CREATE TABLE IF NOT EXISTS kitchen_tickets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id INTEGER,
+  created_at TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'NEW',
+  done_at TEXT)");
+            EnsureColumn("orders", "courier_id", "INTEGER");
+            EnsureColumn("orders", "courier_name", "TEXT");
+            EnsureColumn("orders", "dispatched_at", "TEXT");
+
             if (Convert.ToInt64(Scalar("SELECT COUNT(*) FROM payment_types")) == 0)
             {
                 var defaults = new[] { "Nakit", "Kredi Kartı", "Multinet", "Pluxee (Sodexo)", "Edenred (Ticket)", "Setcard", "Metropol", "Açık Hesap" };

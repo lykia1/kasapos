@@ -83,6 +83,15 @@ JOIN orders o ON o.id=pm.order_id WHERE o.status='PAID' AND o." + where.Trim() +
             foreach (var x in types) l.Add(Printer.LR(OrderTypes.Label(x.Item1) + " (" + x.Item2 + ")", Money.Fmt(x.Item3)));
             l.Add(Printer.Line());
 
+            var cour = Db.Query("SELECT courier_name AS n, COUNT(*) AS c, SUM(total) AS a FROM orders WHERE status='PAID' AND courier_name IS NOT NULL AND" + where + " GROUP BY courier_name ORDER BY c DESC",
+                r => (Db.S(r, "n"), Db.L(r, "c"), Db.D(r, "a")), p);
+            if (cour.Count > 0)
+            {
+                l.Add("#KURYELER");
+                foreach (var x in cour) l.Add(Printer.LR(x.Item1 + " (" + x.Item2 + " paket)", Money.Fmt(x.Item3)));
+                l.Add(Printer.Line());
+            }
+
             l.Add("#ÜRÜN SATIŞLARI");
             var items = Db.Query(@"SELECT i.name AS n, SUM(i.qty) AS q, SUM(i.qty*i.unit_price) AS a FROM order_items i
 JOIN orders o ON o.id=i.order_id WHERE o.status='PAID' AND o." + where.Trim() + " GROUP BY i.name ORDER BY q DESC",

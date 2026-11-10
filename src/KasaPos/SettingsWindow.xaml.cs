@@ -13,6 +13,7 @@ namespace KasaPos
     {
         private ObservableCollection<User> _users;
         private ObservableCollection<PaymentType> _payTypes;
+        private ObservableCollection<Courier> _couriers;
 
         public SettingsWindow()
         {
@@ -37,6 +38,10 @@ namespace KasaPos
             CmbKitchen.SelectedItem = SelectOrEmpty(printers, Settings.Get("printer_kitchen"));
             ChkReceiptAuto.IsChecked = Settings.GetBool("receipt_auto", false);
             ChkKitchenAuto.IsChecked = Settings.GetBool("kitchen_auto", false);
+            ChkKitchenScreen.IsChecked = Settings.GetBool("kitchen_screen", false);
+            ChkCourierPrint.IsChecked = Settings.GetBool("courier_print", true);
+            _couriers = new ObservableCollection<Courier>(CourierRepo.All(false));
+            GridCouriers.ItemsSource = _couriers;
             TxtChars.Text = Settings.GetInt("receipt_chars", 32).ToString();
             TxtWidthPx.Text = Settings.GetInt("receipt_width_px", 280).ToString();
             TxtFontSize.Text = Settings.GetInt("receipt_font_size", 10).ToString();
@@ -59,6 +64,7 @@ namespace KasaPos
         {
             GridUsers.CommitEdit(DataGridEditingUnit.Row, true);
             GridPayTypes.CommitEdit(DataGridEditingUnit.Row, true);
+            GridCouriers.CommitEdit(DataGridEditingUnit.Row, true);
 
             if (string.IsNullOrWhiteSpace(TxtBiz.Text))
             {
@@ -103,11 +109,18 @@ namespace KasaPos
             Settings.Set("printer_kitchen", CmbKitchen.SelectedItem as string ?? "");
             Settings.SetBool("receipt_auto", ChkReceiptAuto.IsChecked == true);
             Settings.SetBool("kitchen_auto", ChkKitchenAuto.IsChecked == true);
+            Settings.SetBool("kitchen_screen", ChkKitchenScreen.IsChecked == true);
+            Settings.SetBool("courier_print", ChkCourierPrint.IsChecked == true);
             Settings.Set("receipt_chars", chars.ToString());
             Settings.Set("receipt_width_px", px.ToString());
             Settings.Set("receipt_font_size", fs.ToString());
 
             foreach (var u in users) UserRepo.Save(u);
+            foreach (var c in _couriers.Where(c => !string.IsNullOrWhiteSpace(c.Name)))
+            {
+                c.Name = c.Name.Trim();
+                CourierRepo.Save(c);
+            }
             foreach (var p in _payTypes.Where(p => !string.IsNullOrWhiteSpace(p.Name)))
             {
                 p.Name = p.Name.Trim();

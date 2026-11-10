@@ -394,9 +394,15 @@ namespace KasaPos
         {
             var sel = LstCart.SelectedItem;
             LstCart.ItemsSource = null;
-            LstCart.ItemsSource = _order.Items;
-            if (sel != null && _order.Items.Contains(sel)) LstCart.SelectedItem = sel;
-            TxtEmptyCart.Visibility = _order.Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            var visible = _order.Items.Where(i => i.Qty > 0).ToList();
+            LstCart.ItemsSource = visible;
+            if (sel != null && visible.Contains(sel)) LstCart.SelectedItem = sel;
+            TxtEmptyCart.Visibility = visible.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            bool masaSaved = _order.OrderType == OrderTypes.Masa && _order.Id > 0;
+            BtnMoveTable.IsEnabled = masaSaved;
+            BtnMerge.IsEnabled = masaSaved;
+            BtnSplit.IsEnabled = visible.Count > 0;
+            BtnCourier.IsEnabled = _order.OrderType == OrderTypes.Paket && visible.Count > 0;
             TxtSubtotal.Text = Money.FmtTl(_order.Subtotal);
             TxtDiscount.Text = _order.Discount > 0 ? "-" + Money.FmtTl(_order.Discount) : "-";
             TxtTotal.Text = Money.FmtTl(_order.Total);
@@ -416,7 +422,7 @@ namespace KasaPos
             get
             {
                 var it = LstCart.SelectedItem as OrderItem;
-                if (it == null && _order.Items.Count > 0) it = _order.Items.Last();
+                if (it == null) it = _order.Items.LastOrDefault(i => i.Qty > 0);
                 return it;
             }
         }
@@ -434,7 +440,7 @@ namespace KasaPos
             var it = SelectedItem;
             if (it == null) return;
             it.Qty -= 1;
-            if (it.Qty <= 0) _order.Items.Remove(it);
+            if (it.Qty <= 0) RemoveItem(it);
             RefreshCart();
         }
 
@@ -445,7 +451,7 @@ namespace KasaPos
             var s = InputDialog.Ask(this, "Adet", it.Name + " için adet (ör. 2 veya 1,5):", it.QtyText);
             decimal q;
             if (s == null || !Money.TryParse(s, out q)) return;
-            if (q <= 0) _order.Items.Remove(it); else it.Qty = q;
+            if (q <= 0) RemoveItem(it); else it.Qty = q;
             RefreshCart();
         }
 
@@ -453,8 +459,15 @@ namespace KasaPos
         {
             var it = LstCart.SelectedItem as OrderItem;
             if (it == null) return;
-            _order.Items.Remove(it);
+            RemoveItem(it);
             RefreshCart();
+        }
+
+        /// <summary>Mutfağa gitmiş ürün silinirse iptal bilgisi gidebilsin diye adedi 0 yapılır.</summary>
+        private void RemoveItem(OrderItem it)
+        {
+            if (it.PrintedQty > 0) it.Qty = 0;
+            else _order.Items.Remove(it);
         }
 
         private void BtnItemNote_Click(object sender, RoutedEventArgs e)
@@ -527,7 +540,7 @@ namespace KasaPos
 
         private bool CollectAndValidate()
         {
-            if (_order.Items.Count == 0)
+            if (!_order.Items.Any(i => i.Qty > 0))
             {
                 MessageBox.Show("Sepet boş.", Title);
                 return false;
@@ -583,9 +596,9 @@ namespace KasaPos
 
         private void SendToKitchenIfEnabled()
         {
-            if (!Settings.GetBool("kitchen_auto", false)) return;
-            var err = Printer.PrintKitchen(_order);
+            var err = Kitchen.Send(_order);
             if (err != null) MessageBox.Show("Mutfak fişi yazdırılamadı: " + err, Title);
+            _order.Items.RemoveAll(i => i.Qty <= 0);
         }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
@@ -679,6 +692,149 @@ namespace KasaPos
             _order = OrderRepo.Get(o.Id);
             LoadOrderIntoUi();
             ShowView(false);
+        }
+
+        // ================= Masa taşı / birleştir / böl / kurye =================
+
+        private void BtnMoveTable_Click(object sender, RoutedEventArgs e)
+        {
+            if (_order.OrderType != OrderTypes.Masa || _order.Id == 0) return;
+            var busy = OrderRepo.Open().Where(o => o.OrderType == OrderTypes.Masa).Select(o => o.TableNo).ToList();
+            var free = TableRepo.All().Select(t => t.Name).Where(n => !busy.Any(b => string.Equals(b, n, StringComparison.OrdinalIgnoreCase))).ToList();
+            var dlg = new ChoiceDialog("Masa Taşı", "Masa " + _order.TableNo + " hangi masaya taşınsın?", free, "Başka masa:") { Owner = this };
+            if (dlg.ShowDialog() != true) return;
+            string target = dlg.ManualValue ?? free[dlg.SelectedIndex];
+            if (OrderRepo.TableIsBusy(target, _order.Id))
+            {
+                MessageBox.Show("Masa " + target + " dolu. Birleştirmek için 'Birleştir'i kullan.", Title);
+                return;
+            }
+            OrderRepo.MoveTable(_order.Id, target);
+            if (Kitchen.ScreenEnabled) KitchenRepo.Add(_order.Id, "Masa " + _order.TableNo + " → " + target, "Masa taşındı");
+            _order = OrderRepo.Get(_order.Id);
+            LoadOrderIntoUi();
+            RefreshOpenOrders();
+        }
+
+        private void BtnMerge_Click(object sender, RoutedEventArgs e)
+        {
+            if (_order.OrderType != OrderTypes.Masa || _order.Id == 0) return;
+            var others = OrderRepo.Open().Where(o => o.OrderType == OrderTypes.Masa && o.Id != _order.Id).ToList();
+            var dlg = new ChoiceDialog("Masa Birleştir", "Hangi masanın siparişi Masa " + _order.TableNo + " ile birleştirilsin?",
+                others.Select(o => "Masa " + o.TableNo + "\n" + Money.FmtTl(o.Total)).ToList()) { Owner = this };
+            if (dlg.ShowDialog() != true || dlg.SelectedIndex < 0) return;
+            var src = others[dlg.SelectedIndex];
+            if (MessageBox.Show("Masa " + src.TableNo + " siparişi Masa " + _order.TableNo + " içine alınacak ve Masa " + src.TableNo + " boşalacak. Onaylıyor musun?",
+                Title, MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+            // Ekrandaki kaydedilmemiş değişiklikleri önce kaydet
+            if (CollectAndValidate()) OrderRepo.Save(_order);
+            OrderRepo.Merge(src.Id, _order.Id);
+            _order = OrderRepo.Get(_order.Id);
+            LoadOrderIntoUi();
+            RefreshOpenOrders();
+        }
+
+        private void BtnSplit_Click(object sender, RoutedEventArgs e)
+        {
+            if (!CollectAndValidate()) return;
+            var split = new SplitWindow(_order) { Owner = this };
+            if (split.ShowDialog() != true) return;
+            var sel = split.Selected;
+            if (sel.Count == 0) return;
+
+            var part = new Order
+            {
+                OrderType = _order.OrderType,
+                TableNo = _order.TableNo,
+                CustomerId = _order.CustomerId,
+                CustomerName = _order.CustomerName,
+                CustomerPhone = _order.CustomerPhone,
+                CustomerAddress = _order.CustomerAddress,
+                UserId = Me?.Id ?? _order.UserId,
+                UserName = Me?.Name ?? _order.UserName,
+                CreatedAt = _order.CreatedAt,
+                Note = "Bölünmüş hesap"
+            };
+            foreach (var kv in sel)
+                part.Items.Add(new OrderItem { ProductId = kv.Key.ProductId, Name = kv.Key.Name, Qty = kv.Value, UnitPrice = kv.Key.UnitPrice, PrintedQty = kv.Value, Note = kv.Key.Note });
+
+            var pay = new PaymentWindow(part.Total) { Owner = this };
+            if (pay.ShowDialog() != true) return;
+
+            // Önce ana siparişi kaydet (yeni kalemler mutfağa gitsin)
+            _order.Status = "OPEN";
+            OrderRepo.Save(_order);
+            SendToKitchenIfEnabled();
+
+            foreach (var kv in sel)
+            {
+                kv.Key.Qty -= kv.Value;
+                kv.Key.PrintedQty = Math.Max(0, kv.Key.PrintedQty - kv.Value);
+            }
+            _order.Items.RemoveAll(i => i.Qty <= 0);
+            if (_order.Discount > _order.Subtotal) _order.Discount = _order.Subtotal;
+            if (_order.Items.Count == 0) _order.Status = "SPLIT";
+            OrderRepo.Save(_order);
+
+            part.Payments = pay.Payments;
+            part.Status = "PAID";
+            part.PaidAt = DateTime.Now;
+            part.BusinessDay = Settings.BusinessDay(part.PaidAt.Value);
+            OrderRepo.Save(part);
+            if (Settings.GetBool("receipt_auto", false) || pay.PrintReceipt)
+            {
+                var err = Printer.PrintReceipt(part, pay.Change);
+                if (err != null) MessageBox.Show("Fiş yazdırılamadı: " + err, Title);
+            }
+
+            if (_order.Status == "SPLIT") NewOrder(_order.OrderType);
+            else
+            {
+                _order = OrderRepo.Get(_order.Id);
+                LoadOrderIntoUi();
+            }
+            RefreshOpenOrders();
+        }
+
+        private void BtnCourier_Click(object sender, RoutedEventArgs e)
+        {
+            if (_order.OrderType != OrderTypes.Paket) return;
+            var couriers = CourierRepo.All();
+            if (couriers.Count == 0)
+            {
+                MessageBox.Show("Önce Ayarlar > Kuryeler sekmesinden kurye ekle.", Title);
+                return;
+            }
+            if (!CollectAndValidate()) return;
+            var dlg = new ChoiceDialog("Kurye", "Paket hangi kuryeye verilsin?", couriers.Select(c => c.Name).ToList()) { Owner = this };
+            if (dlg.ShowDialog() != true || dlg.SelectedIndex < 0) return;
+            var chosen = couriers[dlg.SelectedIndex];
+            _order.CourierId = chosen.Id;
+            _order.CourierName = chosen.Name;
+            _order.DispatchedAt = DateTime.Now;
+            _order.Status = "OPEN";
+            OrderRepo.Save(_order);
+            SendToKitchenIfEnabled();
+            OrderRepo.Save(_order);
+            if (Settings.GetBool("courier_print", true))
+            {
+                var err = Printer.PrintReceipt(_order);
+                if (err != null) MessageBox.Show("Paket fişi yazdırılamadı: " + err, Title);
+            }
+            NewOrder(OrderTypes.Paket);
+            RefreshOpenOrders();
+        }
+
+        private KitchenWindow _kds;
+
+        private void BtnKds_Click(object sender, RoutedEventArgs e)
+        {
+            if (_kds == null || !_kds.IsLoaded)
+            {
+                _kds = new KitchenWindow();
+                _kds.Show();
+            }
+            else _kds.Activate();
         }
 
         // ================= Üst menü =================
