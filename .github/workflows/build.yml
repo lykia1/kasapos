@@ -45,17 +45,21 @@ jobs:
             KasaPOS-v0.1.${{ github.run_number }}.zip
             out/KasaPOS.exe
 
-      - name: Hata raporu
-        if: failure()
+      - name: Derleme kaydını ci-log dalına yaz
+        if: always()
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
+          mkdir -p /tmp/ci && cd /tmp/ci
           {
-            echo "Derleme #${{ github.run_number }} başarısız oldu."
-            echo ''
-            echo '```'
-            if [ -f build.log ]; then grep -E "error|Error" build.log | sed 's#.*src/KasaPos/#src/KasaPos/#' | sort -u | head -120; echo '---'; tail -40 build.log; fi
-            echo '```'
-          } > err.md
-          gh issue create --repo "${{ github.repository }}" --title "Derleme hatası #${{ github.run_number }}" --body-file err.md
+            echo "run=${{ github.run_number }} status=${{ job.status }} sha=${{ github.sha }}"
+            if [ -f "$GITHUB_WORKSPACE/build.log" ]; then
+              grep -E "error|Error" "$GITHUB_WORKSPACE/build.log" | sed 's#.*src/KasaPos/#src/KasaPos/#' | sort -u | head -150
+              echo '--- tail ---'
+              tail -40 "$GITHUB_WORKSPACE/build.log"
+            fi
+          } > status.txt
+          git init -q
+          git config user.name ci && git config user.email ci@example.com
+          git checkout -q -b ci-log
+          git add status.txt && git commit -qm "run ${{ github.run_number }} ${{ job.status }}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ci-log
